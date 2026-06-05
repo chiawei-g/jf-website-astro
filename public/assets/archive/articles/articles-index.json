@@ -1,0 +1,57 @@
+{
+  "_meta": {
+    "purpose": "Press features and media coverage of JF Self Defense. Source-of-truth for the future articles.html page and the About page's 'As featured in' section. Archived 2026-05-29 from the original jfselfdefense.com.",
+    "type": "press-mentions",
+    "count": 3
+  },
+  "articles": [
+    {
+      "id": "honeykids-mums-kids",
+      "title": "Singapore Self-Defense Classes for Mums & Kids",
+      "publishedDate": "2019-09-16",
+      "category": "Media Feature",
+      "featuredOn": {
+        "publication": "HoneyKids Asia",
+        "publicationShort": "HoneyKids",
+        "url": "https://honeykidsasia.com/self-defense-courses-in-singapore/",
+        "audience": "Singapore parenting / family lifestyle"
+      },
+      "originalArchiveUrl": "https://www.jfselfdefense.com/singapore-self-defence-classes-for-mums-kids/",
+      "archiveFile": "01-honeykids-asia-mums-kids.md",
+      "pullQuote": "A massive confidence boost with this dedicated self-defence centre.",
+      "topics": ["women", "kids", "family-safety", "fitness"]
+    },
+    {
+      "id": "avenueone-where-to-attend",
+      "title": "Where can you attend self-defense classes in Singapore?",
+      "publishedDate": "2019-09-16",
+      "category": "Media Feature",
+      "featuredOn": {
+        "publication": "AvenueOne SG",
+        "publicationShort": "AvenueOne",
+        "url": "https://avenueone.sg/health-fitness/self-defense-classes-singapore/",
+        "audience": "Singapore health & fitness"
+      },
+      "originalArchiveUrl": "https://www.jfselfdefense.com/where-can-you-attend-self-defense-classes-in-singapore/",
+      "archiveFile": "02-avenueone-where-to-attend.md",
+      "pullQuote": "Techniques that aim to end any violent attack in less than 15 seconds.",
+      "topics": ["jeffrey-and-ryan", "experience", "all-ages"]
+    },
+    {
+      "id": "marie-france-train-yourself",
+      "title": "Train Yourself: Place to get self-defense classes in Singapore",
+      "publishedDate": "2019-07-01",
+      "category": "Media Feature",
+      "featuredOn": {
+        "publication": "Marie France Asia",
+        "publicationShort": "Marie France",
+        "url": "https://www.mariefranceasia.com/health/healthy-practices/physical-exercise/self-defense-classes-singapore-237717.html#item=5",
+        "audience": "Regional women's lifestyle"
+      },
+      "originalArchiveUrl": "https://www.jfselfdefense.com/train-yourself-place-to-get-self-defense-classes-in-singapore/",
+      "archiveFile": "03-marie-france-asia-train-yourself.md",
+      "pullQuote": "JF is committed and passionate about what they do… striking techniques to defence against weapons.",
+      "topics": ["self-defense", "roundup", "weapons-defence"]
+    }
+  ]
+}

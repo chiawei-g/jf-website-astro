@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://lightskyblue-camel-545209.hostingersite.com/sitemap-index.xml

@@ -1,0 +1,216 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getAllArticles } from '../../lib/sanity';
+import { loadJfCategoryLabel } from '../../lib/jf-categories';
+
+const all = (await getAllArticles()) || [];
+const categoryLabel = await loadJfCategoryLabel();
+
+// Featured: explicitly flagged article, else most recent.
+const featuredIdx = all.findIndex((a: any) => a.featured);
+const featured = featuredIdx >= 0 ? all[featuredIdx] : (all[0] ?? null);
+const rest = featured ? all.filter((a: any) => a._id !== featured._id) : [];
+
+const fmt = (d: string | Date) =>
+  new Intl.DateTimeFormat('en-SG', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(d));
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Blog',
+      name: 'JF Self Defense — Articles',
+      description: 'Long-form essays on awareness, avoidance, de-escalation, and the decisions that matter before any technique does.',
+      url: new URL('/articles/', Astro.site).toString(),
+      inLanguage: 'en-SG',
+      publisher: {
+        '@type': 'Organization',
+        name: 'JF Self Defense',
+      },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', Astro.site).toString() },
+        { '@type': 'ListItem', position: 2, name: 'Articles', item: new URL('/articles/', Astro.site).toString() },
+      ],
+    },
+  ],
+};
+---
+<BaseLayout
+  title="Articles"
+  description="Long-form essays on awareness, avoidance, de-escalation, and the decisions that matter before any technique does. From the JF Self Defense studio in Paya Lebar, Singapore."
+  activeNav="articles"
+  bodyLabel="05 Articles"
+  jsonLd={jsonLd}>
+
+<!-- ARTICLES HERO -->
+<section class="articles-hero">
+  <div class="wrap">
+    <div class="crumb">
+      <span>JF SELF DEFENSE</span><span class="sep">/</span><span class="here">ARTICLES</span>
+    </div>
+    <span class="eyebrow"><span class="dot"></span>READ BEFORE YOU TRAIN</span>
+    <h1 class="display h1 articles-hero-title">
+      Most of the work<br/>starts <span class="red">here</span>.
+    </h1>
+    <p class="lede articles-hero-lede">
+      Long-form essays from Jeffrey, Ryan and the studio — on awareness, avoidance,
+      de-escalation, and the decisions that matter before any technique does. Free.
+      No hype. No upsell.
+    </p>
+  </div>
+</section>
+
+{all.length === 0 ? (
+  <!-- EMPTY STATE -->
+  <section class="wrap articles-grid-wrap" style="padding-top:0;">
+    <div class="articles-grid-head">
+      <span class="eyebrow"><span class="dot"></span>IN PROGRESS</span>
+      <h2 class="display h2 articles-grid-title">The first essay is on the way.</h2>
+    </div>
+    <p class="lede" style="margin-top:24px;max-width:60ch;">
+      Jeffrey is writing now. Drop your email below and you'll get the first piece
+      the day it goes live — no spam, no upsell, one essay at a time.
+    </p>
+  </section>
+) : (
+  <>
+    {featured && (
+      <section class="wrap articles-featured-wrap">
+        <article class="article-featured">
+          <a class="article-featured-link" href={`/articles/${featured.slug}/`}>
+            {featured.coverImageUrl ? (
+              <div class="article-featured-img">
+                <img src={featured.coverImageUrl} alt={featured.title} />
+              </div>
+            ) : (
+              <div class="article-featured-img" style="background:var(--bg-2);"></div>
+            )}
+            <div class="article-featured-body">
+              <div class="article-meta">
+                <span class="article-cat">{categoryLabel[featured.category] || featured.category}</span>
+                <span class="article-sep">·</span>
+                <span class="article-date">{fmt(featured.publishedAt)}</span>
+                {featured.readTime && (
+                  <>
+                    <span class="article-sep">·</span>
+                    <span class="article-read">{featured.readTime}</span>
+                  </>
+                )}
+              </div>
+              <h2 class="article-featured-title">{featured.title}</h2>
+              <p class="article-featured-excerpt">{featured.excerpt}</p>
+              <span class="article-featured-cta">Read the essay <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+            </div>
+          </a>
+        </article>
+      </section>
+    )}
+
+    {rest.length > 0 && (
+      <section class="wrap articles-grid-wrap">
+        <div class="articles-grid-head">
+          <span class="eyebrow"><span class="dot"></span>PUBLISHED</span>
+          <h2 class="display h2 articles-grid-title">Essays from the studio.</h2>
+        </div>
+
+        <ol class="articles-list">
+          {rest.map((a: any, idx: number) => (
+            <li class="article-card">
+              <a href={`/articles/${a.slug}/`} class="article-card-link">
+                <div class="article-card-num">{String(idx + 1).padStart(2, '0')}</div>
+                <div class="article-card-img">
+                  {a.coverImageUrl ? (
+                    <img src={a.coverImageUrl} alt="" />
+                  ) : (
+                    <div style="width:100%;height:100%;background:linear-gradient(135deg,var(--bg-2),var(--bg-3));"></div>
+                  )}
+                </div>
+                <div class="article-card-body">
+                  <div class="article-meta">
+                    <span class="article-cat">{categoryLabel[a.category] || a.category}</span>
+                    <span class="article-sep">·</span>
+                    <span class="article-date">{fmt(a.publishedAt)}</span>
+                    {a.readTime && (
+                      <>
+                        <span class="article-sep">·</span>
+                        <span class="article-read">{a.readTime}</span>
+                      </>
+                    )}
+                  </div>
+                  <h3 class="article-card-title">{a.title}</h3>
+                  <p class="article-card-excerpt">{a.excerpt}</p>
+                  <span class="article-card-arrow">→</span>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </section>
+    )}
+  </>
+)}
+
+<!-- NEWSLETTER -->
+<section class="articles-news">
+  <div class="wrap articles-news-inner">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>ARTICLES, MONTHLY</span>
+      <h2 class="display h2 articles-news-title">
+        One careful piece<br/>per month. <span class="red">To your inbox.</span>
+      </h2>
+      <p class="lede articles-news-lede">
+        No spam. No upsell. One essay, once a month, on the decisions that keep you
+        out of fights — and what to do in the seconds when those decisions run out.
+      </p>
+    </div>
+    <form class="articles-news-form" novalidate onsubmit="event.preventDefault();">
+      <label for="news-email" class="visually-hidden">Email</label>
+      <input id="news-email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required />
+      <button type="submit" class="articles-news-submit">
+        Subscribe
+        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </button>
+      <p class="articles-news-note">Currently in development — newsletter delivery wires up at launch.</p>
+    </form>
+  </div>
+</section>
+
+<!-- CONTACT — inline form, page-bottom -->
+<section class="contact-section" id="book">
+  <div class="wrap">
+    <div class="contact-inner">
+      <div class="contact-pitch">
+        <span class="eyebrow"><span class="dot"></span>BOOK A FREE TRIAL</span>
+        <h2>
+          Start with a<br/>single class.<br/>
+          <span class="red">On the house.</span>
+        </h2>
+        <p class="body" style="font-size:16px;max-width:42ch;">
+          Your first session is free — group, women's, or a 1-on-1 introduction.
+          Bring workout gear and water; no prior experience needed. Jeffrey
+          personally confirms every booking within 24&nbsp;hours.
+        </p>
+        <div class="contact-side">
+          <div class="contact-side-row">
+            <span class="label">STUDIO</span>
+            <span class="val">414 Upper Paya Lebar Road, L2 Prestige Point<br/>Singapore 534994</span>
+          </div>
+          <div class="contact-side-row">
+            <span class="label">EMAIL</span>
+            <span class="val"><a href="mailto:Jeffrey.f@jfselfdefense.com">Jeffrey.f@jfselfdefense.com</a></span>
+          </div>
+          <div class="contact-side-row">
+            <span class="label">WHATSAPP</span>
+            <span class="val"><a href="https://wa.me/6596210576" target="_blank" rel="noopener">+65 9621 0576</a></span>
+          </div>
+        </div>
+      </div>
+      <div data-inline-trial-form></div>
+    </div>
+  </div>
+</section>
+
+</BaseLayout>

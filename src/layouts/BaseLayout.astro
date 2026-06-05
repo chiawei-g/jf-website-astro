@@ -1,0 +1,201 @@
+---
+// Shared shell for every JF page. Loads /styles.css + /site.js verbatim from
+// public/ so the existing class system + interactive JS (trial modal,
+// testimonials carousel, mobile nav) keeps working unchanged.
+
+interface Props {
+  title: string;
+  description: string;
+  activeNav?: 'home' | 'about' | 'trainers' | 'programmes' | 'articles';
+  ogImage?: string;
+  ogType?: 'website' | 'article';
+  canonicalPath?: string;
+  noindex?: boolean;
+  bodyLabel?: string;
+  jsonLd?: object | object[];
+}
+
+const {
+  title,
+  description,
+  activeNav,
+  ogImage,
+  ogType = 'website',
+  canonicalPath = Astro.url.pathname,
+  noindex = false,
+  bodyLabel,
+  jsonLd,
+} = Astro.props;
+
+const siteName = 'JF Self Defense';
+const fullTitle = title === siteName ? title : `${title} — ${siteName}`;
+const canonical = new URL(canonicalPath, Astro.site).toString();
+const ogImageAbs = ogImage ? new URL(ogImage, Astro.site).toString() : new URL('/assets/logo.png', Astro.site).toString();
+
+// CDN cache buster — bump when public/styles.css or public/site.js changes.
+const V = '25';
+
+// Organization JSON-LD on every page.
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SportsActivityLocation',
+  name: 'JF Self Defense',
+  url: 'https://lightskyblue-camel-545209.hostingersite.com/',
+  description: "Practical self defense in Singapore, taught by a working operator. Built on the question: what didn't have to happen?",
+  founder: {
+    '@type': 'Person',
+    name: 'Jeffrey Fleury',
+    jobTitle: 'Founder & Master Trainer',
+    description: '30+ years in law enforcement, security and protective services. ICPS, BSc.',
+  },
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: '414 Upper Paya Lebar Road, L2 Prestige Point',
+    addressLocality: 'Singapore',
+    postalCode: '534994',
+    addressCountry: 'SG',
+  },
+  telephone: '+65-9621-0576',
+  email: 'Jeffrey.f@jfselfdefense.com',
+  foundingDate: '2009',
+};
+---
+<!DOCTYPE html>
+<html lang="en" data-bg="charcoal" data-headline="humanist">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex,nofollow" />}
+
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<link rel="apple-touch-icon" href="/assets/logo.png" />
+<meta name="theme-color" content="#0E0E10" />
+
+<meta property="og:type" content={ogType} />
+<meta property="og:site_name" content={siteName} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImageAbs} />
+<meta property="og:locale" content="en_SG" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImageAbs} />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href={`/styles.css?v=${V}`} />
+
+<script type="application/ld+json" set:html={JSON.stringify(orgJsonLd)} />
+{jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+</head>
+<body data-screen-label={bodyLabel || title}>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/">
+      <img class="brand-logo" src="/assets/logo.png" alt="JF Self Defense" />
+      <span class="brand-wm">
+        <span class="brand-wm-1">EST. 2009 · SINGAPORE</span>
+        <span class="brand-wm-2">JF Self Defense</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a class:list={["nav-link", activeNav === 'home' && 'is-active']} href="/">Home</a>
+      <a class:list={["nav-link", activeNav === 'about' && 'is-active']} href="/about/">About</a>
+      <a class:list={["nav-link", activeNav === 'trainers' && 'is-active']} href="/trainers/">Trainers</a>
+      <a class:list={["nav-link", activeNav === 'programmes' && 'is-active']} href="/programmes/">Programmes</a>
+      <a class:list={["nav-link", activeNav === 'articles' && 'is-active']} href="/articles/">Articles</a>
+    </div>
+    <button class="nav-hamburger" type="button" data-nav-toggle aria-label="Open menu" aria-expanded="false" aria-controls="nav-dropdown">
+      <span class="nav-hamburger-bar"></span>
+      <span class="nav-hamburger-bar"></span>
+      <span class="nav-hamburger-bar"></span>
+    </button>
+    <a class="nav-cta" href="#book" data-trial>
+      Book a free trial
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+    </a>
+  </div>
+</nav>
+<div class="nav-dropdown" id="nav-dropdown" data-nav-dropdown aria-hidden="true">
+  <ul class="nav-dropdown-links">
+    <li><a class:list={["nav-dropdown-link", activeNav === 'home' && 'is-active']} href="/">Home</a></li>
+    <li><a class:list={["nav-dropdown-link", activeNav === 'about' && 'is-active']} href="/about/">About</a></li>
+    <li><a class:list={["nav-dropdown-link", activeNav === 'trainers' && 'is-active']} href="/trainers/">Trainers</a></li>
+    <li><a class:list={["nav-dropdown-link", activeNav === 'programmes' && 'is-active']} href="/programmes/">Programmes</a></li>
+    <li><a class:list={["nav-dropdown-link", activeNav === 'articles' && 'is-active']} href="/articles/">Articles</a></li>
+  </ul>
+  <a class="nav-dropdown-cta" href="#book" data-trial>
+    Book a free trial
+    <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+  </a>
+  <div class="nav-dropdown-foot">
+    <a href="https://wa.me/6596210576" target="_blank" rel="noopener">WhatsApp · +65 9621 0576</a>
+    <a href="mailto:Jeffrey.f@jfselfdefense.com">Email Jeffrey</a>
+  </div>
+</div>
+
+<slot />
+
+<!-- FOOTER -->
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="/">
+          <img class="brand-logo" src="/assets/logo.png" alt="JF Self Defense" />
+          <span class="brand-wm">
+            <span class="brand-wm-1">EST. 2009 · SINGAPORE</span>
+            <span class="brand-wm-2">JF Self Defense</span>
+          </span>
+        </a>
+        <p class="small" style="margin-top:20px;max-width:32ch;">
+          Practical self defense, taught by a working operator. Singapore's only
+          self-defense school built on the question: what didn't have to happen?
+        </p>
+      </div>
+      <div>
+        <div class="foot-h">Site</div>
+        <ul class="foot-list">
+          <li><a href="/">Home</a></li>
+          <li><a href="/about/">About</a></li>
+          <li><a href="/trainers/">Trainers</a></li>
+          <li><a href="/programmes/">Programmes</a></li>
+          <li><a href="/articles/">Articles</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="foot-h">Studio</div>
+        <ul class="foot-list">
+          <li>414 Upper Paya Lebar Road</li>
+          <li>L2 Prestige Point</li>
+          <li>Singapore 534994</li>
+        </ul>
+      </div>
+      <div>
+        <div class="foot-h">Reach Jeffrey</div>
+        <ul class="foot-list">
+          <li><a href="https://wa.me/6596210576">+65 9621 0576</a></li>
+          <li><a href="mailto:Jeffrey.f@jfselfdefense.com">Jeffrey.f@jfselfdefense.com</a></li>
+          <li><a href="https://facebook.com/jfselfdefense">Facebook</a></li>
+          <li><a href="#">ClassPass</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 JF SELF DEFENSE PTE. LTD.</span>
+      <span>SINGAPORE · EST. 2009</span>
+    </div>
+  </div>
+</footer>
+
+<script src={`/site.js?v=${V}`}></script>
+</body>
+</html>

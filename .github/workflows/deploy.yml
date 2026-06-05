@@ -1,0 +1,48 @@
+name: Build and Deploy
+
+on:
+  # Fires from Sanity webhook on document publish.
+  repository_dispatch:
+    types: [sanity-publish]
+  # Fires on push to main (manual code changes).
+  push:
+    branches: [main]
+  # Manual trigger from Actions UI.
+  workflow_dispatch:
+
+# Prevent stale-snapshot races when multiple publish events fire close together.
+concurrency:
+  group: jf-site-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Build Astro site
+        run: npm run build
+        env:
+          SANITY_PROJECT_ID: pe441y01
+          SANITY_DATASET: production
+          SANITY_TOKEN: ${{ secrets.SANITY_TOKEN }}
+          # SITE_URL defaults to staging; override to https://jfselfdefense.com
+          # by adding a SITE_URL secret once DNS cuts over.
+          SITE_URL: ${{ secrets.SITE_URL }}
+      - name: Deploy via SCP to Hostinger
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          port: ${{ secrets.HOSTINGER_PORT }}
+          username: ${{ secrets.HOSTINGER_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          source: "dist/*"
+          target: "/home/u778119288/domains/lightskyblue-camel-545209.hostingersite.com/public_html/"
+          strip_components: 1
+          overwrite: true
+          rm: false

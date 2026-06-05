@@ -1,0 +1,312 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getAllArticles, getArticleBySlug } from '../../lib/sanity';
+import { toHTML } from '@portabletext/to-html';
+
+export async function getStaticPaths() {
+  const items = (await getAllArticles()) || [];
+  return items.map((entry: any) => ({
+    params: { slug: entry.slug },
+    props: { slug: entry.slug },
+  }));
+}
+
+const { slug } = Astro.props as { slug: string };
+const entry = await getArticleBySlug(slug);
+
+if (!entry) {
+  return Astro.redirect('/articles/');
+}
+
+const {
+  title,
+  excerpt,
+  category,
+  categorySlug,
+  categoryNav,
+  publishedAt,
+  readTime,
+  coverImageUrl,
+  body,
+  metaDescription,
+} = entry;
+
+const catLabel = categoryNav || category || 'Articles';
+
+const date = new Date(publishedAt);
+// Editorial date format: dd . mm . yyyy (magazine convention)
+const dd = String(date.getDate()).padStart(2, '0');
+const mm = String(date.getMonth() + 1).padStart(2, '0');
+const yyyy = date.getFullYear();
+const editorialDate = `${dd} . ${mm} . ${yyyy}`;
+const isoDate = date.toISOString();
+
+const slugify = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+const bodyHtml = toHTML(body || [], {
+  components: {
+    types: {
+      image: ({ value }: any) => {
+        const url = value?.url || value?.asset?.url;
+        if (!url) return '';
+        const alt = (value?.alt || '').replace(/"/g, '&quot;');
+        return `<figure class="inline-image"><img src="${url}" alt="${alt}" loading="lazy" /></figure>`;
+      },
+    },
+    block: {
+      h2: ({ children, value }: any) => {
+        const text = (value?.children || []).map((c: any) => c.text || '').join('');
+        return `<h2 id="${slugify(text)}">${children}</h2>`;
+      },
+    },
+    marks: {
+      link: ({ children, value }: any) => {
+        const href = value?.href || '#';
+        const isExternal = /^https?:\/\//.test(href);
+        const target = isExternal ? ' target="_blank" rel="noopener"' : '';
+        return `<a href="${href}"${target}>${children}</a>`;
+      },
+    },
+  },
+});
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Article',
+      headline: title,
+      description: excerpt,
+      datePublished: isoDate,
+      author: {
+        '@type': 'Person',
+        name: 'Jeffrey Fleury',
+        jobTitle: 'Founder, JF Self Defense',
+        description: '30+ years in law enforcement, security and protective services. ICPS, BSc.',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'JF Self Defense',
+        logo: { '@type': 'ImageObject', url: new URL('/assets/logo.png', Astro.site).toString() },
+      },
+      image: coverImageUrl || undefined,
+      articleSection: catLabel,
+      inLanguage: 'en-SG',
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': new URL(`/articles/${slug}/`, Astro.site).toString(),
+      },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', Astro.site).toString() },
+        { '@type': 'ListItem', position: 2, name: 'Articles', item: new URL('/articles/', Astro.site).toString() },
+        { '@type': 'ListItem', position: 3, name: title, item: new URL(`/articles/${slug}/`, Astro.site).toString() },
+      ],
+    },
+  ],
+};
+---
+<BaseLayout
+  title={title}
+  description={metaDescription || excerpt}
+  ogType="article"
+  ogImage={coverImageUrl}
+  activeNav="articles"
+  bodyLabel="Article"
+  jsonLd={articleJsonLd}>
+
+<article class="article-detail">
+  <!-- COVER -->
+  {coverImageUrl && (
+    <div class="article-cover">
+      <img src={coverImageUrl} alt="" />
+    </div>
+  )}
+
+  <!-- HEADER -->
+  <header class="article-head wrap">
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="/articles/" style="color:inherit;">ARTICLES</a>
+      <span class="sep">/</span>
+      <span class="here">{catLabel.toUpperCase()}</span>
+    </nav>
+
+    <div class="article-meta" style="margin-top:24px;">
+      <span class="article-cat">{catLabel}</span>
+      <span class="article-sep">·</span>
+      <span class="article-date"><time datetime={isoDate}>{editorialDate}</time></span>
+      {readTime && (
+        <>
+          <span class="article-sep">·</span>
+          <span class="article-read">{readTime}</span>
+        </>
+      )}
+    </div>
+
+    <h1 class="display h1 article-detail-title">{title}</h1>
+
+    <p class="lede article-detail-lede">{excerpt}</p>
+  </header>
+
+  <!-- BODY -->
+  <div class="article-body wrap">
+    <div class="article-prose" set:html={bodyHtml}></div>
+  </div>
+
+  <!-- END MARK + BACK -->
+  <footer class="article-end wrap">
+    <p class="article-endmark">JF SELF DEFENSE</p>
+    <a class="btn" href="/articles/" style="margin-top:32px;">
+      <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(180deg);"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      All articles
+    </a>
+  </footer>
+</article>
+
+<!-- CONTACT — inline form, page-bottom -->
+<section class="contact-section" id="book">
+  <div class="wrap">
+    <div class="contact-inner">
+      <div class="contact-pitch">
+        <span class="eyebrow"><span class="dot"></span>BOOK A FREE TRIAL</span>
+        <h2>
+          Start with a<br/>single class.<br/>
+          <span class="red">On the house.</span>
+        </h2>
+        <p class="body" style="font-size:16px;max-width:42ch;">
+          Your first session is free — group, women's, or a 1-on-1 introduction.
+          Bring workout gear and water; no prior experience needed. Jeffrey
+          personally confirms every booking within 24&nbsp;hours.
+        </p>
+        <div class="contact-side">
+          <div class="contact-side-row">
+            <span class="label">STUDIO</span>
+            <span class="val">414 Upper Paya Lebar Road, L2 Prestige Point<br/>Singapore 534994</span>
+          </div>
+          <div class="contact-side-row">
+            <span class="label">EMAIL</span>
+            <span class="val"><a href="mailto:Jeffrey.f@jfselfdefense.com">Jeffrey.f@jfselfdefense.com</a></span>
+          </div>
+          <div class="contact-side-row">
+            <span class="label">WHATSAPP</span>
+            <span class="val"><a href="https://wa.me/6596210576" target="_blank" rel="noopener">+65 9621 0576</a></span>
+          </div>
+        </div>
+      </div>
+      <div data-inline-trial-form></div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .article-detail { padding-top: clamp(40px, 6vh, 80px); padding-bottom: clamp(40px, 8vh, 96px); }
+  .article-cover {
+    width: 100%;
+    aspect-ratio: 21/9;
+    overflow: hidden;
+    margin-bottom: clamp(40px, 6vh, 80px);
+    background: var(--bg-2);
+  }
+  .article-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .article-head { max-width: 880px; margin: 0 auto; }
+  .article-detail-title {
+    font-size: clamp(40px, 6vw, 88px);
+    margin: 24px 0 32px;
+    max-width: 22ch;
+  }
+  .article-detail-lede {
+    font-size: clamp(20px, 1.6vw, 28px);
+    color: var(--ink);
+    font-style: italic;
+    margin-bottom: 0;
+    max-width: 50ch;
+  }
+  .article-body { max-width: 720px; margin: clamp(48px, 8vh, 96px) auto 0; }
+  .article-prose :global(p) {
+    font-size: 18px;
+    line-height: 1.75;
+    color: var(--ink-2);
+    margin-bottom: 1.25em;
+  }
+  .article-prose :global(p:first-of-type)::first-letter {
+    font-family: var(--f-display);
+    font-size: 3.6em;
+    float: left;
+    line-height: 0.9;
+    padding-right: 0.12em;
+    padding-top: 0.06em;
+    font-weight: 600;
+    color: var(--red);
+  }
+  .article-prose :global(h2) {
+    font-family: var(--f-display);
+    font-size: clamp(28px, 3vw, 40px);
+    font-weight: 500;
+    line-height: 1.15;
+    margin: 2em 0 0.6em;
+    color: var(--ink);
+  }
+  .article-prose :global(h2)::before {
+    content: ""; display: block; width: 28px; height: 2px;
+    background: var(--red); margin-bottom: 16px;
+  }
+  .article-prose :global(h3) {
+    font-family: var(--f-display);
+    font-size: clamp(22px, 2vw, 28px);
+    font-weight: 500;
+    margin: 1.6em 0 0.5em;
+    color: var(--ink);
+  }
+  .article-prose :global(blockquote) {
+    border-left: 2px solid var(--red);
+    padding-left: 24px;
+    margin: 32px 0;
+    font-size: 20px;
+    line-height: 1.5;
+    color: var(--ink);
+    font-style: italic;
+  }
+  .article-prose :global(strong) { color: var(--ink); font-weight: 600; }
+  .article-prose :global(em) { color: var(--ink); }
+  .article-prose :global(a) {
+    color: var(--red);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  .article-prose :global(ul), .article-prose :global(ol) {
+    margin: 0 0 1.25em 1.5em;
+    color: var(--ink-2);
+    font-size: 18px;
+    line-height: 1.6;
+  }
+  .article-prose :global(figure.inline-image) {
+    margin: 40px 0;
+  }
+  .article-prose :global(figure.inline-image img) {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    display: block;
+  }
+  .article-end {
+    max-width: 720px;
+    margin: clamp(48px, 8vh, 96px) auto 0;
+    text-align: center;
+    border-top: 1px solid var(--line);
+    padding-top: clamp(40px, 6vh, 80px);
+  }
+  .article-endmark {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.24em;
+    color: var(--red);
+    text-transform: uppercase;
+  }
+</style>
+
+</BaseLayout>
