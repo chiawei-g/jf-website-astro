@@ -2,7 +2,11 @@ import { createClient } from '@sanity/client';
 
 const projectId = import.meta.env.SANITY_PROJECT_ID || process.env.SANITY_PROJECT_ID || 'pe441y01';
 const dataset   = import.meta.env.SANITY_DATASET   || process.env.SANITY_DATASET   || 'production';
-const token     = import.meta.env.SANITY_TOKEN     || process.env.SANITY_TOKEN;
+// Guard against malformed tokens (the build dies with "Invalid character in
+// header content [authorization]" if the env var has a stray newline). Only
+// pass through values that look like a real Sanity token.
+const rawToken  = (import.meta.env.SANITY_TOKEN || process.env.SANITY_TOKEN || '').toString().trim();
+const token     = /^sk[A-Za-z0-9_-]{50,}$/.test(rawToken) ? rawToken : undefined;
 
 if (!projectId) {
   throw new Error('SANITY_PROJECT_ID is not set. Check site/.env');

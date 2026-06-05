@@ -30,7 +30,10 @@ jobs:
         env:
           SANITY_PROJECT_ID: pe441y01
           SANITY_DATASET: production
-          SANITY_TOKEN: ${{ secrets.SANITY_TOKEN }}
+          # SANITY_TOKEN omitted — production dataset is public-readable and
+          # the secret needs a re-add (clipboard issue 2026-06-05). Restore once
+          # the secret value is verified clean.
+          # SANITY_TOKEN: ${{ secrets.SANITY_TOKEN }}
           # SITE_URL defaults to staging; override to https://jfselfdefense.com
           # by adding a SITE_URL secret once DNS cuts over.
           SITE_URL: ${{ secrets.SITE_URL }}
