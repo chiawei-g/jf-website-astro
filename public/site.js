@@ -365,7 +365,12 @@
       }
 
       try {
-        const res = await fetch("submit-trial.php", {
+        // Root-absolute, NOT relative. The trial modal lives in BaseLayout so it
+        // renders on every page; a relative path resolved against the current
+        // directory, so from /articles/<slug>/ it hit
+        // /articles/<slug>/submit-trial.php and 404'd. The form only ever
+        // worked on the homepage. Every other page failed silently.
+        const res = await fetch("/submit-trial.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
