@@ -277,13 +277,10 @@
           </label>
           <label for="${id('programme')}">Programme of interest
             <select id="${id('programme')}" name="programme">
-              <option>Group training</option>
-              <option>Women's self defense</option>
-              <option>Personalised / Private 1-on-1</option>
-              <option>Kids &amp; families</option>
-              <option>Corporate workshop</option>
-              <option>Security personnel</option>
-              <option>Not sure yet — recommend something</option>
+              <option>Self Defense Class</option>
+              <option>Personalised 1-on-1</option>
+              <option>Corporate &amp; security training</option>
+              <option>Not sure yet, recommend something</option>
             </select>
           </label>
         </div>
@@ -423,6 +420,14 @@
       }
     }
 
+    // Pre-fill preferred day/time if the trigger carries one. Triggers that
+    // define data-trial-when own the field (empty string clears it); triggers
+    // without the attribute leave whatever the visitor typed alone.
+    if (trigger && trigger.hasAttribute && trigger.hasAttribute("data-trial-when")) {
+      const whenInput = modal.querySelector('input[name="when"]');
+      if (whenInput) whenInput.value = trigger.getAttribute("data-trial-when") || "";
+    }
+
     // Reset success state if reopening
     const f = modal.querySelector(".trial-form");
     if (f) {
@@ -523,6 +528,38 @@
     document.addEventListener("DOMContentLoaded", initMobileNav);
   } else {
     initMobileNav();
+  }
+
+  // ----- WEEKLY CLASS SLOT PICKER (programmes page) -----
+  // The four weekly slots are one product, not four. Picking a day only
+  // annotates the booking request: the programme stays "Self Defense Class"
+  // and the chosen slot rides along in the "when" field. Visual selected
+  // state is pure CSS (:checked); this only carries the label across.
+  function initSlotPicker() {
+    const inputs = document.querySelectorAll("[data-slot-input]");
+    if (!inputs.length) return;
+    const note = document.querySelector("[data-slot-note]");
+    const ctas = document.querySelectorAll("[data-slot-cta]");
+    const fallbackNote = note ? note.getAttribute("data-slot-default") || "" : "";
+
+    function sync() {
+      let label = "";
+      inputs.forEach((input) => {
+        if (input.checked) label = input.getAttribute("data-slot") || "";
+      });
+      ctas.forEach((cta) => cta.setAttribute("data-trial-when", label));
+      if (note) {
+        note.textContent = label ? "Booking for " + label + "." : fallbackNote;
+      }
+    }
+
+    inputs.forEach((input) => input.addEventListener("change", sync));
+    sync();
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initSlotPicker);
+  } else {
+    initSlotPicker();
   }
 
   // ----- TESTIMONIALS CAROUSEL -----

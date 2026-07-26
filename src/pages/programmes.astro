@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 <BaseLayout
   title="Programmes"
-  description="Group, womens, personalised 1-on-1, corporate workshops, kids and security personnel. Practical self defense, rebuilt for the life you actually live."
+  description="One weekly self defense class in Singapore. Four slots including a women's night and a family morning, plus private 1-on-1 and corporate training."
   activeNav="programmes"
   bodyLabel="04 Programmes">
 
@@ -23,148 +23,181 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </div>
 </section>
 
-<!-- PROGRAMME LIST -->
-<section class="wrap" style="padding-top:0;">
-  <div class="prog-page-grid">
+<!-- THE MAIN SELL: one weekly class, four slots -->
+<section class="prog-lead" id="class">
+  <div class="prog-lead-inner">
 
-    <article class="prog-page" id="women">
-      <div class="prog-page-num">01</div>
-      <div>
-        <h2 class="prog-page-title">Women's self defense</h2>
-        <p class="mono" style="color:var(--red);margin-top:10px;">MOST POPULAR · MIXED LEVELS</p>
-      </div>
-      <p class="prog-page-desc">
-        Designed around the situations women actually face: the bus stop after dark,
-        the lift home, the persistent stranger, the partner you no longer feel safe
-        with. Drills are scenario-led, not technique-led — the question is never "did
-        you do it perfectly" but "did you go home safely." Open to all levels; you do
-        not need to be fit to start.
+    <div class="prog-lead-pitch">
+      <span class="eyebrow"><span class="dot"></span>THE WEEKLY CLASS</span>
+      <h2 class="display prog-lead-title">Self Defense Class</h2>
+      <p class="prog-lead-desc">
+        One class, four mornings and evenings a week, at the studio on King George's
+        Avenue. Fitness-led, scenario-led, drill-led. You build a working baseline of
+        decisions and movement, and over months that baseline becomes the floor you
+        can think from when something actually happens. Wednesday runs as a women's
+        night and Sunday as a family session: same curriculum, same coach, same
+        standard. Drop-in welcome, and you do not need to be fit to start.
       </p>
-      <div class="prog-page-meta">
-        <span><strong>Format</strong> · weekly group + bookable workshops</span>
-        <span><strong>Duration</strong> · 75 min</span>
-        <span><strong>From</strong> · S$45 / drop-in</span>
-      </div>
-      <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Women's self defense">
-        Book a trial
-        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </a>
-    </article>
+      <dl class="prog-lead-facts">
+        <div>
+          <dt>Format</dt>
+          <dd>Weekly group class</dd>
+        </div>
+        <div>
+          <dt>Duration</dt>
+          <dd>60 min</dd>
+        </div>
+        <div>
+          <dt>Level</dt>
+          <dd>All levels, no experience needed</dd>
+        </div>
+        <div>
+          <dt>From</dt>
+          <dd class="prog-lead-price">S$40 / drop-in</dd>
+        </div>
+      </dl>
+    </div>
 
-    <article class="prog-page" id="group">
-      <div class="prog-page-num">02</div>
+    <div class="prog-lead-schedule">
+      <fieldset class="prog-slots">
+        <legend class="prog-slots-legend">Four slots a week</legend>
+
+        <label class="prog-slot">
+          <input class="prog-slot-input" type="radio" name="class-slot" value="mon"
+                 data-slot-input data-slot="Monday 7-8pm" />
+          <span class="prog-slot-day">Mon</span>
+          <span class="prog-slot-time">7-8pm</span>
+          <span class="prog-slot-tag">All adults</span>
+        </label>
+
+        <label class="prog-slot">
+          <input class="prog-slot-input" type="radio" name="class-slot" value="wed"
+                 data-slot-input data-slot="Wednesday 7-8pm, women's night" />
+          <span class="prog-slot-day">Wed</span>
+          <span class="prog-slot-time">7-8pm</span>
+          <span class="prog-slot-tag">Women's night</span>
+        </label>
+
+        <label class="prog-slot">
+          <input class="prog-slot-input" type="radio" name="class-slot" value="sat"
+                 data-slot-input data-slot="Saturday 9-10am" />
+          <span class="prog-slot-day">Sat</span>
+          <span class="prog-slot-time">9-10am</span>
+          <span class="prog-slot-tag">All adults</span>
+        </label>
+
+        <label class="prog-slot">
+          <input class="prog-slot-input" type="radio" name="class-slot" value="sun"
+                 data-slot-input data-slot="Sunday 9.30-10.30am, family session" />
+          <span class="prog-slot-day">Sun</span>
+          <span class="prog-slot-time">9.30-10.30am</span>
+          <span class="prog-slot-tag">Family</span>
+        </label>
+      </fieldset>
+
+      <div class="prog-book">
+        <p class="prog-book-note" data-slot-note aria-live="polite"
+           data-slot-default="Pick the slot that fits your week, or leave it blank and Jeffrey will suggest one.">
+          Pick the slot that fits your week, or leave it blank and Jeffrey will suggest one.
+        </p>
+        <a class="prog-page-cta prog-book-cta" href="#book"
+           data-trial data-trial-programme="Self Defense Class" data-trial-when=""
+           data-slot-cta>
+          Book a free trial
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- SECONDARY SILOS -->
+<section class="section section-tight">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="section-head-num">ALSO AVAILABLE</span></div>
       <div>
-        <h2 class="prog-page-title">Group training</h2>
-        <p class="mono" style="color:var(--red);margin-top:10px;">WEEKLY · MIXED ADULT</p>
+        <h2 class="display h3 section-head-title">
+          Two other ways<br/>to train with Jeffrey.
+        </h2>
+        <p class="lede" style="margin-top:20px;">
+          Neither runs on the weekly schedule. Both are scoped and quoted per
+          engagement, direct with Jeffrey.
+        </p>
       </div>
-      <p class="prog-page-desc">
-        The flagship: weekly classes at the Paya Lebar studio. Fitness-led,
-        scenario-led, drill-led. You build a working baseline of decisions and
-        movement — and over months, that baseline becomes the floor you can think
-        from when something happens. Drop-in welcome.
-      </p>
-      <div class="prog-page-meta">
-        <span><strong>Format</strong> · weekly group</span>
-        <span><strong>Duration</strong> · 60 min</span>
-        <span><strong>From</strong> · S$40 / drop-in</span>
-      </div>
-      <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Group training">
-        Book a trial
-        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </a>
-    </article>
+    </div>
 
-    <article class="prog-page" id="personal">
-      <div class="prog-page-num">03</div>
-      <div>
-        <h2 class="prog-page-title">Personalised 1-on-1</h2>
-        <p class="mono" style="color:var(--red);margin-top:10px;">PRIVATE · BY APPOINTMENT</p>
-      </div>
-      <p class="prog-page-desc">
-        Private sessions with Jeffrey, programmed against the specific risks of your
-        routine, commute and travel. The honest option for students who want serious
-        progress, or who would rather not train in front of others. Built one
-        student at a time.
-      </p>
-      <div class="prog-page-meta">
-        <span><strong>Format</strong> · 1-on-1 with Jeffrey</span>
-        <span><strong>Duration</strong> · 60–90 min</span>
-        <span><strong>From</strong> · S$180 / session</span>
-      </div>
-      <a class="prog-page-cta" href="https://wa.me/6596210576?text=Hi%20Jeffrey%2C%20I%27d%20like%20to%20enquire%20about%20Personalised%201-on-1%20training." target="_blank" rel="noopener">
-        Contact Jeffrey
-        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </a>
-    </article>
+    <div class="prog-silos">
 
-    <article class="prog-page" id="corporate">
-      <div class="prog-page-num">04</div>
-      <div>
-        <h2 class="prog-page-title">Corporate workshops</h2>
-        <p class="mono" style="color:var(--red);margin-top:10px;">ON-SITE · HALF / FULL-DAY</p>
-      </div>
-      <p class="prog-page-desc">
-        Half-day and full-day sessions delivered on-site for teams of 12–40. Trusted
-        by SUSS, Celanese, Sloane Clinic, National Healthcare Group, Emerson and
-        Latham &amp; Watkins. A practical wellbeing offer that actually makes a
-        difference — and a memorable team day, not another e-learning module.
-      </p>
-      <div class="prog-page-meta">
-        <span><strong>Format</strong> · on-site at your office</span>
-        <span><strong>Duration</strong> · 3 or 6 hours</span>
-        <span><strong>From</strong> · S$2,400 / half-day · POA</span>
-      </div>
-      <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Corporate workshop">
-        Request a proposal
-        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </a>
-    </article>
+      <article class="prog-silo" id="personal">
+        <h3 class="prog-silo-title">Personalised 1-on-1</h3>
+        <p class="prog-silo-desc">
+          Private sessions with Jeffrey, programmed against the specific risks of your
+          routine, commute and travel. The honest option for students who want serious
+          progress, or who would rather not train in front of others. Built one student
+          at a time, so dates are arranged directly with him.
+        </p>
+        <dl class="prog-silo-meta">
+          <div>
+            <dt>Format</dt>
+            <dd>1-on-1 with Jeffrey</dd>
+          </div>
+          <div>
+            <dt>Duration</dt>
+            <dd>60 to 90 min</dd>
+          </div>
+          <div>
+            <dt>Rate</dt>
+            <dd>From S$180 / session</dd>
+          </div>
+        </dl>
+        <a class="prog-page-cta" href="https://wa.me/6596210576?text=Hi%20Jeffrey%2C%20I%27d%20like%20to%20enquire%20about%20Personalised%201-on-1%20training." target="_blank" rel="noopener">
+          Message Jeffrey
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+      </article>
 
-    <article class="prog-page" id="kids">
-      <div class="prog-page-num">05</div>
-      <div>
-        <h2 class="prog-page-title">Kids &amp; families</h2>
-        <p class="mono" style="color:var(--red);margin-top:10px;">AGES 7–14 · WEEKEND</p>
-      </div>
-      <p class="prog-page-desc">
-        Confidence, boundaries, situational awareness — taught to children in
-        language they already understand. No tournaments, no belts, no fear. The
-        curriculum is designed alongside parents and educators, and aimed squarely at
-        the bullying and stranger-risk situations real Singapore kids encounter.
-      </p>
-      <div class="prog-page-meta">
-        <span><strong>Format</strong> · weekend group</span>
-        <span><strong>Duration</strong> · 45 min</span>
-        <span><strong>From</strong> · S$35 / drop-in</span>
-      </div>
-      <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Kids &amp; families">
-        Book a trial
-        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </a>
-    </article>
+      <article class="prog-silo" id="corporate">
+        <h3 class="prog-silo-title">Corporate &amp; Security Training</h3>
+        <p class="prog-silo-desc">
+          Half-day and full-day sessions delivered on-site for teams of 12 to 40. A
+          practical wellbeing offer that actually makes a difference, and a memorable
+          team day rather than another e-learning module.
+        </p>
+        <p class="prog-silo-desc" id="security">
+          The same engagement track covers working officers, protective staff and
+          in-house security teams, drawn from three decades on the other side of the
+          badge. Curriculum scoped per engagement; references available on request.
+        </p>
+        <div class="prog-silo-clients">
+          <span class="prog-silo-clients-label">Trained teams at</span>
+          <p class="prog-silo-clients-list">
+            SUSS · Celanese · Sloane Clinic · National Healthcare Group · Emerson ·
+            Latham &amp; Watkins
+          </p>
+        </div>
+        <dl class="prog-silo-meta">
+          <div>
+            <dt>Format</dt>
+            <dd>On-site at your office</dd>
+          </div>
+          <div>
+            <dt>Duration</dt>
+            <dd>3 or 6 hours</dd>
+          </div>
+          <div>
+            <dt>Rate</dt>
+            <dd>From S$2,400 / half-day, POA</dd>
+          </div>
+        </dl>
+        <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Corporate &amp; security training">
+          Request a proposal
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </a>
+      </article>
 
-    <article class="prog-page" id="security">
-      <div class="prog-page-num">06</div>
-      <div>
-        <h2 class="prog-page-title">Security personnel</h2>
-        <p class="mono" style="color:var(--red);margin-top:10px;">PROFESSIONAL · BY APPLICATION</p>
-      </div>
-      <p class="prog-page-desc">
-        Specialised training for working officers, protective staff, and corporate
-        security teams. Drawn from three decades on the other side of the badge.
-        Curriculum scoped per engagement; references available on application.
-      </p>
-      <div class="prog-page-meta">
-        <span><strong>Format</strong> · bespoke programme</span>
-        <span><strong>Duration</strong> · varies</span>
-        <span><strong>Cost</strong> · POA</span>
-      </div>
-      <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Security personnel">
-        Apply now
-        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </a>
-    </article>
-
+    </div>
   </div>
 </section>
 
@@ -178,8 +211,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           Train at the pace<br/>that suits your life.
         </h2>
         <p class="lede" style="margin-top:20px;">
-          Packages apply to group, women's and 1-on-1 programmes. Sessions are valid
-          for twelve months from purchase and transferable across formats.
+          Packages apply to the weekly Self Defense Class and work across all four
+          slots. Sessions are valid for twelve months from purchase.
         </p>
       </div>
     </div>
@@ -188,7 +221,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <span class="pkg-h">STARTER</span>
         <div class="pkg-n">4<span class="x"> sessions</span></div>
         <p class="pkg-d">Four sessions, ~5% off drop-in. Best for trying the school out before committing.</p>
-        <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Group training">Get started
+        <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Self Defense Class">Get started
           <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
         </a>
       </div>
@@ -196,7 +229,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <span class="pkg-h">MOST POPULAR</span>
         <div class="pkg-n">8<span class="x"> sessions</span></div>
         <p class="pkg-d">Eight sessions, ~12% off drop-in. The sweet spot for building working memory and movement habits.</p>
-        <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Group training">Get started
+        <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Self Defense Class">Get started
           <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
         </a>
       </div>
@@ -204,7 +237,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <span class="pkg-h">SERIOUS</span>
         <div class="pkg-n">12<span class="x"> sessions</span></div>
         <p class="pkg-d">Twelve sessions, ~18% off drop-in. For students who plan to make this part of the year.</p>
-        <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Group training">Get started
+        <a class="prog-page-cta" href="#book" data-trial data-trial-programme="Self Defense Class">Get started
           <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
         </a>
       </div>
@@ -256,8 +289,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <span class="red">We'll take it from there.</span>
         </h2>
         <p class="body" style="font-size:16px;max-width:42ch;">
-          Trial sessions for women's &amp; group are S$45. Personal training trials
-          are S$180. Corporate proposals and security-personnel applications are
+          Trial sessions for the weekly Self Defense Class are free, any of the four
+          slots. Personalised 1-on-1, corporate workshops and security training are
           quoted per engagement.
         </p>
         <div class="contact-side">
