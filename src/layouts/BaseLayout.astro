@@ -50,11 +50,32 @@ const orgJsonLd = {
   },
   address: {
     '@type': 'PostalAddress',
-    streetAddress: '414 Upper Paya Lebar Road, L2 Prestige Point',
+    streetAddress: "342D King George's Ave",
     addressLocality: 'Singapore',
-    postalCode: '534994',
+    postalCode: '208575',
     addressCountry: 'SG',
   },
+  // Class times — lets Google surface the schedule in local results.
+  openingHoursSpecification: [
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Wednesday'],
+      opens: '19:00',
+      closes: '20:00',
+    },
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: 'Saturday',
+      opens: '09:00',
+      closes: '10:00',
+    },
+    {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: 'Sunday',
+      opens: '09:30',
+      closes: '10:30',
+    },
+  ],
   telephone: '+65-9621-0576',
   email: 'Jeffrey.f@jfselfdefense.com',
   foundingDate: '2009',
@@ -174,9 +195,11 @@ const orgJsonLd = {
       <div>
         <div class="foot-h">Studio</div>
         <ul class="foot-list">
-          <li>414 Upper Paya Lebar Road</li>
-          <li>L2 Prestige Point</li>
-          <li>Singapore 534994</li>
+          <li>342D King George's Ave</li>
+          <li>Singapore 208575</li>
+          <li style="margin-top:10px;">Mon &amp; Wed · 7-8pm</li>
+          <li>Sat · 9-10am</li>
+          <li>Sun · 9.30-10.30am</li>
         </ul>
       </div>
       <div>
