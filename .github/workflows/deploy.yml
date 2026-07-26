@@ -18,6 +18,7 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,15 +38,39 @@ jobs:
           # astro.config.mjs defaults to https://jfselfdefense.com. Set the
           # SITE_URL secret only if you need to build for staging instead.
           SITE_URL: ${{ secrets.SITE_URL }}
-      - name: Deploy via SCP to Hostinger
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HOSTINGER_HOST }}
-          port: ${{ secrets.HOSTINGER_PORT }}
-          username: ${{ secrets.HOSTINGER_USER }}
-          key: ${{ secrets.HOSTINGER_SSH_KEY }}
-          source: "dist/*"
-          target: "/home/u778119288/domains/jfselfdefense.com/public_html/"
-          strip_components: 1
-          overwrite: true
-          rm: false
+      # Raw OpenSSH scp with a retry loop, ported from qanvero-articles-astro.
+      # appleboy/scp-action has no retry, and Hostinger intermittently stalls
+      # the SSH channel around the 60s mark (JF runs #5 and #9 both died that
+      # way). ServerAliveInterval keeps the channel from going idle; the loop
+      # covers the case where Hostinger drops the runner IP outright.
+      - name: Deploy to Hostinger via SCP (OpenSSH, retry on timeout)
+        run: |
+          set -u
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          SSH_OPTS="-i $HOME/.ssh/deploy_key -P ${{ secrets.HOSTINGER_PORT }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=25 -o ServerAliveInterval=10"
+          TARGET="${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:/home/u778119288/domains/jfselfdefense.com/public_html/"
+          ok=0
+          for i in 1 2 3 4 5; do
+            echo "::group::SCP attempt $i"
+            if scp $SSH_OPTS -r dist/* "$TARGET"; then
+              echo "SCP succeeded on attempt $i"; ok=1; echo "::endgroup::"; break
+            fi
+            echo "Attempt $i failed (Hostinger may be stalling or dropping this runner IP)"; echo "::endgroup::"
+            sleep $((i*15))
+          done
+          if [ "$ok" -ne 1 ]; then
+            echo "All SCP attempts failed: Hostinger is blocking this runner IP. Deploy locally with deploy.ps1 instead."
+            exit 1
+          fi
+
+      # A partial SCP can still exit 0, so assert the live site actually serves.
+      - name: Verify live site
+        run: |
+          set -e
+          for u in "https://jfselfdefense.com/" "https://jfselfdefense.com/articles/"; do
+            code=$(curl -sL -o /dev/null -w '%{http_code}' --max-time 30 "$u?cb=${GITHUB_SHA}")
+            echo "$u -> HTTP $code"
+            [ "$code" = "200" ] || { echo "::error::$u returned $code after deploy"; exit 1; }
+          done
