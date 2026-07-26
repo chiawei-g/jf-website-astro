@@ -40,7 +40,7 @@ const orgJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'SportsActivityLocation',
   name: 'JF Self Defense',
-  url: 'https://lightskyblue-camel-545209.hostingersite.com/',
+  url: new URL('/', Astro.site).toString(),
   description: "Practical self defense in Singapore, taught by a working operator. Built on the question: what didn't have to happen?",
   founder: {
     '@type': 'Person',

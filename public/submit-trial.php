@@ -1,8 +1,7 @@
 <?php
 // JF Self Defense trial enquiry handler.
 // Receives JSON or form-encoded POST from site.js and emails the form data.
-// TEST MODE: routing to chiawei.g@dustinhill.com.sg.
-// SWITCH BEFORE GO-LIVE: set $TO = 'Jeffrey.f@jfselfdefense.com'.
+// LIVE: enquiries go to Jeffrey, copied to Chia for lead-flow monitoring.
 
 declare(strict_types=1);
 
@@ -85,7 +84,7 @@ $nameClean  = preg_replace('/[\r\n]+/', ' ', $name) ?? '';
 $emailClean = preg_replace('/[\r\n]+/', '', $email) ?? '';
 $progClean  = preg_replace('/[\r\n]+/', ' ', $programme) ?? '';
 
-$TO      = 'chiawei.g@dustinhill.com.sg';
+$TO      = 'Jeffrey.f@jfselfdefense.com';
 $subject = '[JF Self Defense] Trial booking — ' . ($progClean !== '' ? $progClean : 'general');
 
 $bodyLines = [
@@ -121,6 +120,7 @@ $fromAddress = 'noreply@' . $host;
 $headers = [
     'From: JF Self Defense <' . $fromAddress . '>',
     'Reply-To: ' . $nameClean . ' <' . $emailClean . '>',
+    'Cc: chiawei.g@dustinhill.com.sg',
     'X-Mailer: JF-Self-Defense-Site',
     'Content-Type: text/plain; charset=UTF-8',
     'MIME-Version: 1.0',
