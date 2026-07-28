@@ -86,6 +86,19 @@ const orgJsonLd = {
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+{/* Google tag (gtag.js) — GA4. Property 547369215 under the Goh Chia Wei
+    account (143604471), created 2026-07-27. JF was the last brand in the
+    portfolio with no analytics of any kind. Matches the install pattern used
+    by DHP / CGull / Qanvero / Jacyoga. */}
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-L650FNHQTS"></script>
+<script is:inline>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-L650FNHQTS');
+</script>
+
 <title>{fullTitle}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={canonical} />
