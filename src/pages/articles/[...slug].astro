@@ -53,6 +53,39 @@ const bodyHtml = toHTML(body || [], {
         const alt = (value?.alt || '').replace(/"/g, '&quot;');
         return `<figure class="inline-image"><img src="${url}" alt="${alt}" loading="lazy" /></figure>`;
       },
+      // Comparison table — semantic <table> so an answer engine can lift it whole.
+      // Ported 2026-07-28 from the qanvero/cgull/dhp implementation. Its CSS MUST stay
+      // inside `.article-prose :global(...)` below: this body is injected with set:html,
+      // so a plain scoped selector compiles to [data-astro-cid-…] and never matches.
+      comparisonTable: ({ value }: any) => {
+        const headers: string[] = value?.headers || [];
+        const rows: any[] = value?.rows || [];
+        if (!headers.length || !rows.length) return '';
+        const esc = (s: any) =>
+          String(s ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        const caption = value?.caption
+          ? `<caption>${esc(value.caption)}</caption>`
+          : '';
+        const head = `<thead><tr>${headers
+          .map((h) => `<th scope="col">${esc(h)}</th>`)
+          .join('')}</tr></thead>`;
+        const body = rows
+          .map((r: any) => {
+            const cells: string[] = r?.cells || [];
+            return `<tr>${cells
+              .map((c, i) =>
+                i === 0
+                  ? `<th scope="row">${esc(c)}</th>`
+                  : `<td>${esc(c)}</td>`
+              )
+              .join('')}</tr>`;
+          })
+          .join('');
+        return `<div class="article-table-wrap"><table class="article-table">${caption}${head}<tbody>${body}</tbody></table></div>`;
+      },
     },
     block: {
       h2: ({ children, value }: any) => {
@@ -296,6 +329,55 @@ const articleJsonLd = {
     aspect-ratio: 16/9;
     object-fit: cover;
     display: block;
+  }
+  /* Comparison table. KEEP THESE SELECTORS INSIDE :global() — the article body is
+     injected with set:html, so a plain scoped selector compiles to
+     .article-table[data-astro-cid-…] and silently matches nothing. Verify after any
+     edit by grepping the built CSS bundle for [data-astro-cid on .article-table. */
+  .article-prose :global(.article-table-wrap) {
+    margin: 40px 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .article-prose :global(.article-table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    text-align: left;
+  }
+  .article-prose :global(.article-table caption) {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    text-align: left;
+    padding-bottom: 12px;
+  }
+  .article-prose :global(.article-table th),
+  .article-prose :global(.article-table td) {
+    border-bottom: 1px solid var(--line);
+    padding: 12px 16px 12px 0;
+    vertical-align: top;
+  }
+  .article-prose :global(.article-table thead th) {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    border-bottom-color: var(--red);
+    white-space: nowrap;
+  }
+  .article-prose :global(.article-table tbody th) {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .article-prose :global(.article-table tbody tr:last-child th),
+  .article-prose :global(.article-table tbody tr:last-child td) {
+    border-bottom: none;
   }
   .article-end {
     max-width: 720px;
