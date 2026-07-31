@@ -303,6 +303,27 @@
         </div>
         <p class="trial-form-note">By submitting you agree to be contacted by JF Self Defense about your enquiry. No spam — Jeffrey replies personally.</p>
       </form>
+      <!-- Balances the contact grid: the left column carries the headline, lede
+           and four studio rows, so without this the form column ended well short
+           and left a hole. Answers the three things people actually hesitate
+           over before sending an enquiry. -->
+      <div class="trial-next">
+        <span class="trial-next-label">What happens next</span>
+        <dl class="trial-next-list">
+          <div>
+            <dt>Jeffrey reads it himself</dt>
+            <dd>Not a call centre, not an auto-responder. He sees every enquiry that comes in.</dd>
+          </div>
+          <div>
+            <dt>A reply within 24 hours</dt>
+            <dd>He confirms your slot, or suggests one that fits better if the day you picked is full.</dd>
+          </div>
+          <div>
+            <dt>You turn up and train</dt>
+            <dd>Water, a towel and comfortable clothes. Nothing else, and no experience needed.</dd>
+          </div>
+        </dl>
+      </div>
     `;
   }
 

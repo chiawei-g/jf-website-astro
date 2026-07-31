@@ -33,7 +33,7 @@ const canonical = new URL(canonicalPath, Astro.site).toString();
 const ogImageAbs = ogImage ? new URL(ogImage, Astro.site).toString() : new URL('/assets/logo.png', Astro.site).toString();
 
 // CDN cache buster — bump when public/styles.css or public/site.js changes.
-const V = '27';
+const V = '28';
 
 // Organization JSON-LD on every page.
 const orgJsonLd = {
