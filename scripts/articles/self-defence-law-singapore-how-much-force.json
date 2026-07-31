@@ -1,6 +1,14 @@
 {
   "slug": "self-defence-law-singapore-how-much-force",
   "title": "The legal line in Singapore: how much force can you actually use?",
+  "category": {
+    "id": "cat-legal",
+    "title": "Legal",
+    "navLabel": "On the Law",
+    "slug": "legal",
+    "description": "Where the line sits, and what the law actually allows.",
+    "order": 5
+  },
   "excerpt": "Eleven years with the Singapore Police Force. Here is exactly where Singapore law draws the line on self-defence, and how much force it actually allows.",
   "metaDescription": "How much force is legal in self-defence in Singapore? A police-veteran instructor on proportionality, sourced to the Penal Code itself.",
   "readTime": "7 min read",
@@ -687,19 +695,11 @@
         {
           "_type": "span",
           "_key": "sp65",
-          "text": ". It is also the subject of the legal chapter in a longer framework I have written out in full, called The 3 Pillars of Self-Defense."
+          "text": "."
         }
       ]
     }
   ],
-  "category": {
-    "id": "cat-legal",
-    "title": "Legal",
-    "navLabel": "On the Law",
-    "slug": "legal",
-    "description": "Where the line sits, and what the law actually allows.",
-    "order": 5
-  },
   "coverImagePath": "scripts/generated-images/self-defence-law-singapore-how-much-force-cover.webp",
   "inlineImagePath": "scripts/generated-images/self-defence-law-singapore-how-much-force-inline.webp",
   "coverAlt": "A lone man seen from behind, silhouetted, walking alone down a wet Singapore street at night past shuttered shopfronts, hands in his jacket pockets, streetlamps and a distant red traffic light lighting the empty road ahead.",
