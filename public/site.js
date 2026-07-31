@@ -311,16 +311,12 @@
         <span class="trial-next-label">What happens next</span>
         <dl class="trial-next-list">
           <div>
-            <dt>Jeffrey reads it himself</dt>
-            <dd>Not a call centre, not an auto-responder. He sees every enquiry that comes in.</dd>
+            <dt>Jeffrey replies himself, within 24 hours</dt>
+            <dd>Not a call centre. He confirms your slot, or suggests one that fits better.</dd>
           </div>
           <div>
-            <dt>A reply within 24 hours</dt>
-            <dd>He confirms your slot, or suggests one that fits better if the day you picked is full.</dd>
-          </div>
-          <div>
-            <dt>You turn up and train</dt>
-            <dd>Water, a towel and comfortable clothes. Nothing else, and no experience needed.</dd>
+            <dt>Then you just turn up</dt>
+            <dd>Water, a towel, comfortable clothes. No experience needed.</dd>
           </div>
         </dl>
       </div>

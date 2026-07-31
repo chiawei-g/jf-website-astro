@@ -4019,8 +4019,8 @@ body.nav-locked {
    an enquiry. Injected by site.js alongside the form, so it appears on every
    page that has one. Borrows the label + hairline idiom from .prog-silo-*. */
 .trial-next {
-  margin-top: 32px;
-  padding-top: 24px;
+  margin-top: 24px;
+  padding-top: 18px;
   border-top: 1px solid var(--line);
 }
 .trial-next-label {
@@ -4032,9 +4032,9 @@ body.nav-locked {
   color: var(--ink-3);
 }
 .trial-next-list {
-  margin: 16px 0 0;
+  margin: 12px 0 0;
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 .trial-next-list > div {
   display: grid;
@@ -4048,10 +4048,10 @@ body.nav-locked {
 }
 .trial-next-list dd {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--ink-3);
-  max-width: 46ch;
+  max-width: 52ch;
 }
 @media (max-width: 900px) {
   /* Single column below the grid breakpoint: the form already sits under the
