@@ -1,0 +1,568 @@
+{
+  "slug": "trust-your-gut-feeling-about-danger",
+  "title": "Trust the prickle: your gut and why you override it",
+  "categoryRef": "cat-avoidance",
+  "excerpt": "Eleven years with the Singapore Police Force and twenty-two in regional security on why people override a warning instinct anyway, and the low-cost habit that lets you act on it early.",
+  "metaDescription": "Should you trust your gut feeling about danger? Yes. A Singapore Police veteran on why people override it anyway, and what to do instead.",
+  "readTime": "8 min read",
+  "featured": false,
+  "publishedAt": "2026-08-01T12:00:00Z",
+  "body": [
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1",
+          "text": "The lift doors are three seconds from closing when a man jogs up and calls out, 'Hold it, please.' Something in your chest flags it before you've formed a single word about why, a small, wordless no. You hold the door anyway. Stepping back and waiting for the next lift would mean explaining yourself to a stranger for a reason you can't even name yet. The doors close. Nothing happens. Nothing happens almost every time, and by the floor you get off at, you've already stopped thinking about it."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnk3",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/trainers/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k2",
+          "text": "Eleven years with the Singapore Police Force, then twenty-two more reading exactly this kind of moment for MNC staff across Asia-Pacific, is where the rest of this article comes from. That background is on the "
+        },
+        {
+          "_type": "span",
+          "_key": "k4",
+          "marks": [
+            "lnk3"
+          ],
+          "text": "trainers page"
+        },
+        {
+          "_type": "span",
+          "_key": "k5",
+          "text": " in full. What it taught me was not that people fail to notice. Almost everyone notices. What fails, nearly every time, is what happens in the second after noticing."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "blockquote",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k6",
+          "text": "Most people who describe a bad situation afterward say some version of the same sentence: I had a feeling, and I talked myself out of it. The gut is usually working fine. What fails is the override, the fast, automatic decision to stay quiet because acting on the feeling seems rude, seems dramatic, or risks embarrassment if it turns out to be nothing. That override is not a character flaw. It is ordinary social training doing exactly what it was built to do, in the one place it shouldn't. What follows is that override, named honestly, and a handful of exits that cost nothing if the feeling turns out to be wrong."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k7",
+          "text": "Should you trust your gut feeling about danger?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k8",
+          "text": "Yes. The prickle at the back of your neck is not superstition, and it is not random. Your senses are picking up something real, a shift in someone's pace or a sudden change in how close they're standing, faster than your conscious mind can assemble a reason for it. The feeling arrives first because the read is genuinely faster than the explanation, not because it is less true than the explanation."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnk10",
+          "_type": "link",
+          "href": "https://www.harvardmagazine.com/2001/07/snap-judgments-work-html"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k9",
+          "text": "Psychologists have studied a version of this for decades under the name thin-slicing, pioneered by researcher Nalini Ambady. In one well-known line of "
+        },
+        {
+          "_type": "span",
+          "_key": "k11",
+          "marks": [
+            "lnk10"
+          ],
+          "text": "research on snap judgments"
+        },
+        {
+          "_type": "span",
+          "_key": "k12",
+          "text": ", observers who watched only a few seconds of a stranger's ordinary, unscripted behaviour, with no name and no backstory attached, rated them in ways that lined up closely with how that same person was independently judged after months of real contact. A few seconds of real behaviour carries more usable information than most people assume."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k13",
+          "text": "The research comes with a real limit, and it matters here. Ambady herself was careful to say the read holds for behaviour happening in front of you right now, not for judging who someone is by category. Treat the prickle as information about what a specific person is doing in this specific moment, not a verdict on a type of person. That distinction is what keeps the read useful instead of turning into prejudice."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnk15",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/articles/how-attackers-choose-their-victims/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k14",
+          "text": "It runs on the same kind of signal covered from the other side in "
+        },
+        {
+          "_type": "span",
+          "_key": "k16",
+          "marks": [
+            "lnk15"
+          ],
+          "text": "how attackers actually choose their victims"
+        },
+        {
+          "_type": "span",
+          "_key": "k17",
+          "text": ", a fast, mostly accurate scan of behaviour, not of who you are."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k18",
+          "text": "The override, not the instinct"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k19",
+          "text": "The prickle almost never goes unnoticed. What usually happens next is a second, faster calculation running underneath the first one: what this will cost, right now, in front of this specific person. Stepping back from the lift costs a flicker of awkwardness with a stranger who is very possibly having an entirely ordinary day. Staying quiet costs nothing you can point to, unless it doesn't. One of those costs is certain and immediate. The other is only a maybe, and most people, given a choice between a small guaranteed cost and a large uncertain one, take the guaranteed cost every time, and call it politeness."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k20",
+          "text": "I've watched this same calculation for years, across a career that started in the police force and continued through two decades of corporate security work. It is not a personal failing. It is the specific thing most of us were trained to do from an early age, long before any of us stood in front of an actual threat: keep the interaction smooth and extend the benefit of the doubt. That training is not wrong in general. It makes ordinary life with strangers workable. It simply was never built for the rare moment when the stranger in front of you is the exception, and it does not know how to switch off just because the stakes changed."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k21",
+          "text": "If you have ever overridden that feeling and something happened afterward, this is the part worth hearing clearly: the override was not a character flaw, and it was not evidence you should have known better. It was the same training almost everyone carries, doing exactly what it was built to do, at the one moment it should not have. That does not undo what happened. It does mean the fix was never about becoming a more suspicious person. It is about having a specific, low-cost action ready before the moment arrives, so the decision does not depend on out-arguing your own training in real time."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k22",
+          "text": "What the override actually sounds like"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k23",
+          "text": "The override rarely sounds dramatic in the moment. It sounds like a short, reasonable sentence you tell yourself in under a second, and it is almost always followed by an exit that would have cost nothing at all."
+        }
+      ]
+    },
+    {
+      "_type": "comparisonTable",
+      "caption": "Five ordinary moments the prickle fires, the sentence that usually cancels it, and the exit that costs nothing either way",
+      "headers": [
+        "The moment",
+        "What you tell yourself",
+        "The exit that costs nothing if you're wrong"
+      ],
+      "rows": [
+        {
+          "_type": "row",
+          "cells": [
+            "A lift closing on someone who feels off",
+            "I'll look silly waiting for the next one",
+            "Say you forgot something, step back, take the next lift"
+          ]
+        },
+        {
+          "_type": "row",
+          "cells": [
+            "A ride-hailing driver takes an unfamiliar route",
+            "I don't want to make this awkward for him",
+            "Say your destination aloud, ask him to stop somewhere lit"
+          ]
+        },
+        {
+          "_type": "row",
+          "cells": [
+            "Someone matches your pace on a quiet stretch",
+            "It's probably just someone walking the same way",
+            "Cross the street or change pace once, see what happens"
+          ]
+        },
+        {
+          "_type": "row",
+          "cells": [
+            "An acquaintance insists on walking you home",
+            "He seems nice, I don't want to be rude",
+            "'I'm heading this way, thanks,' then walk toward other people"
+          ]
+        },
+        {
+          "_type": "row",
+          "cells": [
+            "A stranger's question feels like it's testing you",
+            "I'm probably overreacting to something completely normal",
+            "Answer flat and short, keep walking, keep the distance open"
+          ]
+        }
+      ]
+    },
+    {
+      "_type": "image-placeholder"
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k24",
+          "text": "Decide the rule before you need it"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnk26",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/articles/walking-alone-at-night-singapore/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k25",
+          "text": "Decide the rule before the moment arrives. It's the same principle behind "
+        },
+        {
+          "_type": "span",
+          "_key": "k27",
+          "marks": [
+            "lnk26"
+          ],
+          "text": "choosing a night route while you're rested, not at 1am"
+        },
+        {
+          "_type": "span",
+          "_key": "k28",
+          "text": ": the hard thinking happens ahead of time, so the rushed version of you only has to follow a decision instead of making one from scratch. The rule here is short. If the prickle fires, take the exit, and do not narrate the reason to anyone, including yourself. Not 'I think this man might be dangerous.' Just 'I'll catch the next one.' Not 'I feel unsafe with you walking me home.' Just 'I'm heading this way, thanks.'"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k29",
+          "text": "The explanation is where the override wins. The moment you start building a case solid enough to justify the exit out loud, you have already argued yourself most of the way back into staying. A flat sentence, said without a pause before it, closes the question before the negotiation with yourself even opens."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k30",
+          "text": "None of this requires a confrontation, and it rarely reads as one. Creating distance or moving toward light and other people costs a few seconds and a flicker of feeling silly. Weighed against what the exit is actually insuring against, that trade stops looking close."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k31",
+          "text": "Common questions"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k32",
+          "text": "Isn't trusting a feeling just superstition?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k33",
+          "text": "No. The feeling is your senses reading real behaviour faster than your conscious mind can explain it, not a hunch pulled from nowhere. This method does not ask you to trust vague dread about a place or a type of person. It asks you to notice a concrete change in someone's pace or the distance they're keeping, and treat that noticing as worth a low-cost response."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k34",
+          "text": "What if I make a scene over nothing?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k35",
+          "text": "Almost none of the exits in this article look like a scene from the outside. Stepping back from a lift or asking a driver to pull over somewhere lit reads as perfectly ordinary to anyone watching, because people do exactly that every day for reasons that have nothing to do with fear. The version of this that actually causes a scene is vanishingly rare, and even then, a few awkward seconds is a small price next to what it's insuring against."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k36",
+          "text": "Isn't this just another way of saying stay suspicious of everyone?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnk38",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/articles/three-minutes-singapore-awareness/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k37",
+          "text": "No, and the difference is worth its own answer in "
+        },
+        {
+          "_type": "span",
+          "_key": "k39",
+          "marks": [
+            "lnk38"
+          ],
+          "text": "the three-minute awareness habit we teach before anything else"
+        },
+        {
+          "_type": "span",
+          "_key": "k40",
+          "text": ". That habit is about staying present for a few minutes at a time, not about treating every stranger as a threat. This article picks up one step later, at the rare moment a specific, concrete signal shows up against that ordinary baseline, and what to do about it that costs nothing if you've read it wrong."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k41",
+          "text": "What if I ignore the feeling and nothing happens, like it usually doesn't?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k42",
+          "text": "That's the expected outcome, not a failure of the method. Nearly every prickle you'll ever feel will turn out to be nothing, the same way the lift at the start of this article usually ends with nothing happening. The method was never about being right every time. It's about the exit costing so little that being wrong ninety-nine times out of a hundred is a completely reasonable price for being right the one time it matters."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k43",
+          "text": "What if acting on it upsets the other person?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k44",
+          "text": "That's a cost you're allowed to accept, and it usually doesn't happen the way people fear. A flat, unhurried 'I'll catch the next one' or 'I'm heading this way, thanks' is a complete sentence. It doesn't require an explanation or an apology, and how the other person reacts to it is theirs to manage, not yours."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k45",
+          "text": "What if I already overrode the feeling once and something happened?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k46",
+          "text": "Then the thing to hear clearly is that it was not your fault. The override is not a personal weakness. It is what almost everyone is trained to do, and it failed you at the one moment that training was never built to handle. That does not undo what happened, and it is not meant to. What it does mean is that the fix was never about becoming a more suspicious person after the fact. It's a specific, low-cost habit, decided now, so the next time the prickle fires, the decision has already been made."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnk48",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/programmes/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k47",
+          "text": "None of this replaces the instinct that comes from real practice, the kind where the low-cost exit stops being a decision and simply becomes the thing your body already does. That instinct is what I build with students, one rep at a time, in the room at "
+        },
+        {
+          "_type": "span",
+          "_key": "k49",
+          "marks": [
+            "lnk48"
+          ],
+          "text": "JF's programmes"
+        },
+        {
+          "_type": "span",
+          "_key": "k50",
+          "text": "."
+        }
+      ]
+    }
+  ],
+  "coverImagePath": "scripts/generated-images/trust-your-gut-feeling-about-danger-cover.webp",
+  "inlineImagePath": "scripts/generated-images/trust-your-gut-feeling-about-danger-inline.webp",
+  "coverAlt": "A man walks alone on a quiet Singapore street at dusk, seen from behind, pausing mid-step in a composed beat of noticing, with no threat and no pursuer in frame.",
+  "inlineAlt": "Abstract graphic of a small, vivid red signal against a large quiet charcoal field, fading through progressively smaller and dimmer echoes, a signal being damped into stillness."
+}
