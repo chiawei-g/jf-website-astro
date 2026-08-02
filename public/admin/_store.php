@@ -3,6 +3,12 @@ declare(strict_types=1);
 
 // JF Self Defense admin — domain constants and the flock-guarded JSON store.
 // INCLUDE ONLY. Never request this file over HTTP.
+
+// A GA4 snapshot older than this is treated as absent rather than shown as
+// current. Two sibling sites in this portfolio ran on a frozen snapshot for
+// three weeks without anyone noticing, because a stale number looks exactly
+// like a fresh one.
+const JFSD_GA_STALE_DAYS = 3;
 if (!defined('JFSD_ADMIN')) {
     http_response_code(404);
     exit;
@@ -1153,4 +1159,66 @@ function jfsd_today(): string
 {
     return (new DateTimeImmutable('now', new DateTimeZone((string) (jfsd_config()['timezone'] ?? 'Asia/Singapore'))))
         ->format('Y-m-d');
+}
+
+/**
+ * Read the GA4 snapshot written by scripts/fetch-ga-snapshot.mjs.
+ *
+ * Lives at admin/data/ga-snapshot.json — inside the deploy tree so it ships
+ * with the build, but admin/.htaccess denies *.json so it is disk-readable by
+ * PHP and 403 over HTTP.
+ *
+ * Returns null if the file is missing, unreadable, malformed, or older than
+ * JFSD_GA_STALE_DAYS. Null means the caller shows "not available" rather than
+ * presenting stale figures as current — the failure mode that let a frozen
+ * snapshot sit unnoticed on two sibling sites for three weeks.
+ *
+ * @return array<string,mixed>|null
+ */
+function jfsd_ga_snapshot(): ?array
+{
+    static $cached = false;
+    static $value = null;
+    if ($cached) {
+        return $value;
+    }
+    $cached = true;
+
+    $path = __DIR__ . '/data/ga-snapshot.json';
+    if (!is_file($path) || !is_readable($path)) {
+        return $value = null;
+    }
+    $raw = @file_get_contents($path);
+    if (!is_string($raw) || $raw === '') {
+        return $value = null;
+    }
+    $data = json_decode($raw, true);
+    if (!is_array($data) || !isset($data['windows']) || !is_array($data['windows'])) {
+        return $value = null;
+    }
+
+    $generated = isset($data['generatedAt']) ? strtotime((string) $data['generatedAt']) : false;
+    if ($generated === false) {
+        return $value = null;
+    }
+    $ageDays = (time() - $generated) / 86400;
+    if ($ageDays > JFSD_GA_STALE_DAYS) {
+        return $value = null;
+    }
+
+    $data['_ageDays'] = $ageDays;
+    return $value = $data;
+}
+
+/** Human-readable age of the GA4 snapshot, for the dashboard footnote. */
+function jfsd_ga_updated_label(): string
+{
+    $snap = jfsd_ga_snapshot();
+    if ($snap === null) {
+        return 'never';
+    }
+    $age = (float) ($snap['_ageDays'] ?? 0);
+    if ($age < 1)  { return 'today'; }
+    if ($age < 2)  { return 'yesterday'; }
+    return (int) floor($age) . ' days ago';
 }

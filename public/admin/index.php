@@ -279,21 +279,49 @@ jfsd_page_title('Today', 'Dashboard');
  *
  * DO NOT soften the badges until the data is genuinely live.
  * ========================================================================= */
-const JFSD_ANALYTICS_ARE_FAKE = true;
+/* GA4 went live on this site 2026-07-27 (property 547369215, G-L650FNHQTS), so
+ * traffic and pages now read from a real snapshot. Search Console is NOT
+ * verified for jfselfdefense.com yet, so the queries panel is still invented
+ * and still badged. One flag per panel, because "analytics" stopped being a
+ * single thing the moment one half became real. */
+$gaSnapshot = jfsd_ga_snapshot();
+$trafficIsFake = ($gaSnapshot === null);
+$pagesAreFake  = ($gaSnapshot === null);
+const JFSD_QUERIES_ARE_FAKE = true;   // until GSC is verified
 
-$demoTraffic = [
-    'visitors'  => '1,284',
-    'sessions'  => '1,902',
-    'avg_time'  => '1m 47s',
-    'enquiries' => '23',
-];
-$demoPages = [
-    ['/',                      '612', '48%'],
-    ['/programmes',            '284', '22%'],
-    ['/about',                 '141', '11%'],
-    ['/articles',              '112', '9%'],
-    ['/contact',               '68',  '5%'],
-];
+if ($gaSnapshot !== null) {
+    $w = $gaSnapshot['windows']['d30']['metrics'] ?? [];
+    $secs = (int) round((float) ($w['averageSessionDuration']['v'] ?? 0));
+    $demoTraffic = [
+        'visitors'  => number_format((int) ($w['totalUsers']['v'] ?? 0)),
+        'sessions'  => number_format((int) ($w['sessions']['v'] ?? 0)),
+        'avg_time'  => sprintf('%dm %02ds', intdiv($secs, 60), $secs % 60),
+        'enquiries' => number_format((int) ($w['screenPageViews']['v'] ?? 0)),
+    ];
+    $rows  = $gaSnapshot['topPages'] ?? [];
+    $total = array_sum(array_map(static fn($r) => (int) ($r['views'] ?? 0), $rows));
+    $demoPages = [];
+    foreach (array_slice($rows, 0, 6) as $r) {
+        $views = (int) ($r['views'] ?? 0);
+        $demoPages[] = [
+            (string) ($r['path'] ?? '/'),
+            number_format($views),
+            $total > 0 ? round($views / $total * 100) . '%' : '—',
+        ];
+    }
+    if ($demoPages === []) {
+        $demoPages = [['No page views recorded yet', '0', '—']];
+    }
+} else {
+    // No snapshot: say so plainly. Do NOT show invented numbers dressed as real.
+    $demoTraffic = [
+        'visitors'  => '—',
+        'sessions'  => '—',
+        'avg_time'  => '—',
+        'enquiries' => '—',
+    ];
+    $demoPages = [['Analytics snapshot not available', '—', '—']];
+}
 $demoQueries = [
     ['self defense singapore',            '2,400', '6.2'],
     ['womens self defence class',         '880',   '4.1'],
@@ -304,46 +332,52 @@ $demoQueries = [
 $demoBadge = '<span class="adm-demo-pill">Demo data — not connected</span>';
 ?>
 
-<div class="adm-panel adm-demo">
+<div class="adm-panel<?= $trafficIsFake ? ' adm-demo' : '' ?>">
   <div class="adm-panel-h">
-    <h2 class="adm-panel-title">Website traffic — last 28 days</h2>
-    <?= $demoBadge ?>
+    <h2 class="adm-panel-title">Website traffic — last 30 days</h2>
+    <?php if ($trafficIsFake): ?><?= $demoBadge ?><?php endif; ?>
   </div>
   <div class="adm-panel-b">
     <div class="adm-cards adm-cards-flush">
       <div class="adm-card">
         <span class="adm-card-label">Visitors</span>
         <span class="adm-card-val"><?= jfsd_e($demoTraffic['visitors']) ?></span>
-        <span class="adm-card-sub">Made-up number.</span>
+        <span class="adm-card-sub">People, not visits.</span>
       </div>
       <div class="adm-card">
         <span class="adm-card-label">Sessions</span>
         <span class="adm-card-val"><?= jfsd_e($demoTraffic['sessions']) ?></span>
-        <span class="adm-card-sub">Made-up number.</span>
+        <span class="adm-card-sub">Separate visits.</span>
       </div>
       <div class="adm-card">
         <span class="adm-card-label">Avg. time on site</span>
         <span class="adm-card-val"><?= jfsd_e($demoTraffic['avg_time']) ?></span>
-        <span class="adm-card-sub">Made-up number.</span>
+        <span class="adm-card-sub">Per visit.</span>
       </div>
       <div class="adm-card">
-        <span class="adm-card-label">Trial enquiries</span>
+        <span class="adm-card-label">Pages viewed</span>
         <span class="adm-card-val"><?= jfsd_e($demoTraffic['enquiries']) ?></span>
-        <span class="adm-card-sub">Made-up number.</span>
+        <span class="adm-card-sub">Across all visits.</span>
       </div>
     </div>
   </div>
-  <p class="adm-demo-note">
-    <strong>These are not your real figures.</strong>
-    Google Analytics 4 is not set up for jfselfdefense.com yet, so there is nothing to read.
-    The layout is here so the real numbers can be plugged in later.
-  </p>
+  <?php if ($trafficIsFake): ?>
+    <p class="adm-demo-note">
+      <strong>No figures available.</strong>
+      The analytics snapshot is missing or has not refreshed in a few days, so
+      nothing is shown rather than something out of date.
+    </p>
+  <?php else: ?>
+    <p class="adm-panel-foot">
+      From Google Analytics, last 30 days. Updated <?= jfsd_e(jfsd_ga_updated_label()) ?>.
+    </p>
+  <?php endif; ?>
 </div>
 
-<div class="adm-panel adm-demo">
+<div class="adm-panel<?= $pagesAreFake ? ' adm-demo' : '' ?>">
   <div class="adm-panel-h">
     <h2 class="adm-panel-title">Top pages</h2>
-    <?= $demoBadge ?>
+    <?php if ($pagesAreFake): ?><?= $demoBadge ?><?php endif; ?>
   </div>
   <div class="adm-panel-b is-flush">
     <div class="adm-scroll">
@@ -361,10 +395,14 @@ $demoBadge = '<span class="adm-demo-pill">Demo data — not connected</span>';
       </table>
     </div>
   </div>
-  <p class="adm-demo-note">
-    <strong>These are not your real pages.</strong>
-    Invented rows, standing in for a GA4 report that does not exist yet.
-  </p>
+  <?php if ($pagesAreFake): ?>
+    <p class="adm-demo-note">
+      <strong>No page data available.</strong>
+      The analytics snapshot is missing or stale.
+    </p>
+  <?php else: ?>
+    <p class="adm-panel-foot">Most-viewed pages, last 30 days.</p>
+  <?php endif; ?>
 </div>
 
 <div class="adm-panel adm-demo">

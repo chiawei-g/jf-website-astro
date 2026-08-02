@@ -1,0 +1,228 @@
+{
+  "_note": "Build-time GA4 fallback, refreshed each CI deploy and baked into dist. A stale generatedAt here does NOT mean the dhp-ga4-reader credential died — the committed copy only updates when someone runs `npm run snapshot` locally; live data updates per successful deploy. If in doubt, run this script (it prints the auth mode) or check pinkaling.dev/pitch/. See playbook §9 ledger 2026-07-26.",
+  "generatedAt": "2026-08-02T05:20:01.782Z",
+  "propertyId": "547369215",
+  "windows": {
+    "d7": {
+      "label": "Last 7 days",
+      "metrics": {
+        "sessions": {
+          "v": 13,
+          "prev": 0,
+          "delta": null
+        },
+        "totalUsers": {
+          "v": 13,
+          "prev": 0,
+          "delta": null
+        },
+        "screenPageViews": {
+          "v": 31,
+          "prev": 0,
+          "delta": null
+        },
+        "averageSessionDuration": {
+          "v": 238.8920106923077,
+          "prev": 0,
+          "delta": null
+        },
+        "engagementRate": {
+          "v": 0.23076923076923078,
+          "prev": 0,
+          "delta": null
+        }
+      }
+    },
+    "d30": {
+      "label": "Last 30 days",
+      "metrics": {
+        "sessions": {
+          "v": 13,
+          "prev": 0,
+          "delta": null
+        },
+        "totalUsers": {
+          "v": 13,
+          "prev": 0,
+          "delta": null
+        },
+        "screenPageViews": {
+          "v": 31,
+          "prev": 0,
+          "delta": null
+        },
+        "averageSessionDuration": {
+          "v": 238.8920106923077,
+          "prev": 0,
+          "delta": null
+        },
+        "engagementRate": {
+          "v": 0.23076923076923078,
+          "prev": 0,
+          "delta": null
+        }
+      }
+    },
+    "d90": {
+      "label": "Last 90 days",
+      "metrics": {
+        "sessions": {
+          "v": 13,
+          "prev": 0,
+          "delta": null
+        },
+        "totalUsers": {
+          "v": 13,
+          "prev": 0,
+          "delta": null
+        },
+        "screenPageViews": {
+          "v": 31,
+          "prev": 0,
+          "delta": null
+        },
+        "averageSessionDuration": {
+          "v": 238.8920106923077,
+          "prev": 0,
+          "delta": null
+        },
+        "engagementRate": {
+          "v": 0.23076923076923078,
+          "prev": 0,
+          "delta": null
+        }
+      }
+    }
+  },
+  "topPages": [
+    {
+      "path": "/",
+      "views": 15
+    },
+    {
+      "path": "/trainers/",
+      "views": 5
+    },
+    {
+      "path": "/about/",
+      "views": 4
+    },
+    {
+      "path": "/programmes/",
+      "views": 4
+    },
+    {
+      "path": "/articles/",
+      "views": 3
+    }
+  ],
+  "events": [
+    {
+      "name": "page_view",
+      "count": 31
+    },
+    {
+      "name": "user_engagement",
+      "count": 20
+    },
+    {
+      "name": "first_visit",
+      "count": 13
+    },
+    {
+      "name": "session_start",
+      "count": 13
+    },
+    {
+      "name": "scroll",
+      "count": 9
+    }
+  ],
+  "conversions": [],
+  "acquisition": [
+    {
+      "source": "(direct)",
+      "medium": "(none)",
+      "sessions": 12,
+      "users": 12
+    },
+    {
+      "source": "(not set)",
+      "medium": "(not set)",
+      "sessions": 1,
+      "users": 1
+    },
+    {
+      "source": "google",
+      "medium": "organic",
+      "sessions": 1,
+      "users": 1
+    }
+  ],
+  "audience": {
+    "country": [
+      {
+        "name": "Singapore",
+        "users": 8
+      },
+      {
+        "name": "Bangladesh",
+        "users": 1
+      },
+      {
+        "name": "Colombia",
+        "users": 1
+      },
+      {
+        "name": "Germany",
+        "users": 1
+      },
+      {
+        "name": "Ireland",
+        "users": 1
+      },
+      {
+        "name": "United States",
+        "users": 1
+      }
+    ],
+    "device": [
+      {
+        "name": "desktop",
+        "users": 13
+      }
+    ],
+    "newVsReturning": [
+      {
+        "name": "new",
+        "users": 13
+      },
+      {
+        "name": "(unknown)",
+        "users": 1
+      }
+    ]
+  },
+  "trend": [
+    {
+      "date": "20260728",
+      "value": 1
+    },
+    {
+      "date": "20260729",
+      "value": 5
+    },
+    {
+      "date": "20260730",
+      "value": 1
+    },
+    {
+      "date": "20260731",
+      "value": 3
+    },
+    {
+      "date": "20260801",
+      "value": 3
+    }
+  ]
+}
