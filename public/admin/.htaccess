@@ -1,0 +1,100 @@
+# === JF Self Defense Admin — PHP session-based auth ===
+#
+# This file MUST live at public/admin/.htaccess, never at public/.htaccess.
+# The CI deploy copies with `scp -r dist/*`, and that shell glob does not match
+# leading-dot entries at the top level — a dist/.htaccess is silently dropped.
+# Nested inside admin/ it ships, because `admin` itself matches the glob and
+# scp then recurses the whole directory including dotfiles.
+#
+# Runs on Hostinger's LiteSpeed, which reads .htaccess natively.
+
+# /admin/ serves the auth-guarded index.php
+DirectoryIndex index.php
+
+# --- Block direct access to PHP includes -----------------------------------
+# Each of these also refuses to run without the JFSD_ADMIN constant, so this
+# is belt and braces rather than the only line of defence.
+<Files "users.php">
+  Require all denied
+</Files>
+<Files "auth.php">
+  Require all denied
+</Files>
+<Files "config.php">
+  Require all denied
+</Files>
+<Files "_store.php">
+  Require all denied
+</Files>
+<Files "_ui.php">
+  Require all denied
+</Files>
+
+# Underscore-prefixed files are includes by convention — deny the whole class
+# so a new one added later is covered without editing this file.
+<FilesMatch "^_">
+  Require all denied
+</FilesMatch>
+
+# The CLI helper is not a web page.
+<FilesMatch "^hash-password\.php$">
+  Require all denied
+</FilesMatch>
+RedirectMatch 403 ^/admin/tools(/.*)?$
+
+# --- Block data and documentation -------------------------------------------
+# No JSON is ever served from /admin/. (Live data lives outside the web root
+# entirely; this stops a stray copy from ever being readable.)
+<FilesMatch "\.json$">
+  Require all denied
+</FilesMatch>
+
+# The README documents server paths and the credential rotation procedure.
+<FilesMatch "\.(md|markdown|bak|old|orig|sql|log|ini|sh)$">
+  Require all denied
+</FilesMatch>
+
+# Any dotfile: .htaccess itself, editor swap files, anything else.
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+# --- Force HTTPS -------------------------------------------------------------
+# The session cookie is now Secure unconditionally, so a plain-HTTP request must
+# never reach the login form: it would render a page that cannot log anyone in.
+# More importantly, Hostinger's own http->https redirect is a control-panel
+# setting outside this repo, and it can be turned off or misconfigured. Without
+# it the sign-in form, the typed password and the session cookie all cross the
+# wire in clear.
+#
+# Wrapped in <IfModule> deliberately: if rewrite is unavailable the directives
+# would 500 the whole admin, and a missing redirect is a smaller failure than an
+# admin that will not load at all.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</IfModule>
+
+# --- Security + privacy headers for everything in /admin/ -------------------
+<IfModule mod_headers.c>
+  # Stops an attacker on the studio or cafe wifi sslstripping the FIRST
+  # navigation and serving a look-alike login form over HTTP.
+  # No includeSubDomains: this is a shared host and a sibling subdomain that is
+  # not HTTPS-ready would be taken offline by it. The apex is what matters here.
+  Header always set Strict-Transport-Security "max-age=31536000"
+  Header always set Cache-Control "no-cache, no-store, must-revalidate"
+  Header always set Pragma "no-cache"
+  Header always set Expires "0"
+  Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+  Header always set X-Frame-Options "DENY"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "no-referrer"
+  Header always set Content-Security-Policy "default-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
+</IfModule>
+
+# NOTE: php_flag / php_value directives are deliberately NOT used here.
+# Hostinger runs PHP under LSAPI, not mod_php, so they are inert — and because
+# they would sit inside an <IfModule> block they would fail silently, which is
+# worse than not being there. Set display_errors in hPanel or a .user.ini.
