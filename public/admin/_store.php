@@ -66,13 +66,25 @@ const JFSD_STUDENT_STATUSES = [
     'left'   => 'Left',
 ];
 
-/** Attendance marks. 'counts' = does this deduct a session from the student. */
-const JFSD_ATTENDANCE_STATUSES = [
-    'present'  => ['label' => 'Present',  'counts' => true],
-    'late'     => ['label' => 'Late',     'counts' => true],
-    'absent'   => ['label' => 'Absent',   'counts' => false],
-    'excused'  => ['label' => 'Excused',  'counts' => false],
-];
+/* ===========================================================================
+ * ATTENDANCE IS A LIST OF WHO TURNED UP
+ * ---------------------------------------------------------------------------
+ * There is no absent, no excused and no late, and there is no status field on
+ * an attendance row at all.
+ *
+ *     on the list  =  came  =  one session off
+ *     not on it    =  did not come, and there is nothing to record
+ *
+ * Absent and excused only mean something when attendance is expected in
+ * advance. Nobody books anything here; people turn up. Late cost a control on
+ * every row and moved nothing in the ledger. Around fifty people are on the
+ * books and four or five are in any one class, so the list is built by typing
+ * a name, not by working down everybody.
+ *
+ * The consequence for the ledger is the important one: a row exists ONLY
+ * because somebody was added, so a row with no 'counted' flag on it must be
+ * read as counted. See jfsd_row_counted().
+ * ========================================================================= */
 
 const JFSD_PAYMENT_METHODS = [
     'bank_transfer' => 'Bank transfer',
@@ -82,13 +94,6 @@ const JFSD_PAYMENT_METHODS = [
 
 /** The four JSON files. Nothing outside this list can be read or written. */
 const JFSD_FILES = ['students', 'attendance', 'payments', 'sessions'];
-
-/**
- * Pseudo-mark meaning "take this row off the register entirely".
- * Not a member of JFSD_ATTENDANCE_STATUSES on purpose — it is an instruction,
- * not a state a student can be in. Clearing reverses whatever the row cost.
- */
-const JFSD_MARK_CLEAR = 'none';
 
 /**
  * 'covers' value used by balance corrections written into payments.json.
@@ -661,29 +666,74 @@ function jfsd_classes_on_date(array $sessions, string $ymd): array
 }
 
 /**
- * How many marks each stored class carries, and how many of those were people
- * actually in the room. A class with no marks at all is a register nobody has
- * taken yet, which is what the calendar paints red.
+ * How many people are on each class's list.
  *
- * @return array<string,array{marked:int,in:int}>
+ * A pair is counted once however many rows carry it, so a duplicate that got
+ * onto disk some other way cannot inflate a headcount on screen.
+ *
+ * @return array<string,int> class id => how many came
  */
-function jfsd_register_counts(array $attendance): array
+function jfsd_attendance_counts(array $attendance): array
 {
-    $out = [];
+    $out  = [];
+    $seen = [];
     foreach ($attendance as $row) {
         $sid = (string) ($row['session_id'] ?? '');
-        if ($sid === '') {
+        $stu = (string) ($row['student_id'] ?? '');
+        if ($sid === '' || $stu === '' || isset($seen[$sid . '|' . $stu])) {
             continue;
         }
-        if (!isset($out[$sid])) {
-            $out[$sid] = ['marked' => 0, 'in' => 0];
-        }
-        $out[$sid]['marked']++;
-        if (in_array((string) ($row['status'] ?? ''), ['present', 'late'], true)) {
-            $out[$sid]['in']++;
-        }
+        $seen[$sid . '|' . $stu] = true;
+        $out[$sid] = ($out[$sid] ?? 0) + 1;
     }
     return $out;
+}
+
+/**
+ * Who is on one class's list, first added first, duplicates collapsed.
+ *
+ * @return string[] student ids
+ */
+function jfsd_attendees(array $attendance, string $sessionId): array
+{
+    if ($sessionId === '') {
+        return [];
+    }
+    $out = [];
+    foreach ($attendance as $row) {
+        if ((string) ($row['session_id'] ?? '') !== $sessionId) {
+            continue;
+        }
+        $stu = (string) ($row['student_id'] ?? '');
+        if ($stu !== '' && !isset($out[$stu])) {
+            $out[$stu] = true;
+        }
+    }
+    return array_keys($out);
+}
+
+/**
+ * The equivalent class one week earlier, which is what "same as last week"
+ * copies from. Null when there was nothing to copy.
+ *
+ * Matched on start time first: that is the ordinary case and the one that
+ * cannot be wrong. Failing that, if the earlier day carried exactly one class,
+ * that one is used — so a week the class started half an hour late still
+ * offers its list. Anything looser would quietly pull the wrong people in.
+ */
+function jfsd_previous_week_class(array $sessions, string $ymd, string $start): ?array
+{
+    $ts = strtotime($ymd . ' 12:00:00 -7 days');
+    if ($ts === false) {
+        return null;
+    }
+    $onDay = jfsd_sessions_on_date($sessions, date('Y-m-d', $ts));
+    foreach ($onDay as $s) {
+        if ((string) ($s['start'] ?? '') === $start) {
+            return $s;
+        }
+    }
+    return count($onDay) === 1 ? $onDay[0] : null;
 }
 
 /**
@@ -828,19 +878,19 @@ function jfsd_adjustment_row(string $studentId, int $sessions, string $note, str
 /**
  * Has this attendance row already charged the student a session?
  *
- * Rows written by this admin always carry an explicit 'counted' flag. A row that
- * has lost it — a hand-repaired file, or a restore from a .bak taken mid-write —
- * must NOT fall back to false: false is the direction that charges the student a
- * SECOND session the next time the register is saved. Infer it from the stored
- * status instead, which is what the operator can actually see on screen.
+ * Rows written by this admin always carry an explicit 'counted' flag. A row
+ * that has lost it — a hand-repaired file, or a restore from a .bak taken
+ * mid-write — must NOT fall back to false. False is the direction that lets
+ * the student be charged a SECOND time, and it is also simply wrong under this
+ * model: a row exists only because somebody was added to a class, and adding
+ * is the thing that deducts.
  */
 function jfsd_row_counted(array $row): bool
 {
     if (array_key_exists('counted', $row)) {
         return (bool) $row['counted'];
     }
-    $status = (string) ($row['status'] ?? '');
-    return (bool) (JFSD_ATTENDANCE_STATUSES[$status]['counts'] ?? false);
+    return true;
 }
 
 /**
@@ -959,32 +1009,32 @@ function jfsd_add_session(string $date, string $start, string $end, string $labe
 }
 
 /**
- * Save one class register. Idempotent by (session_id, student_id): re-saving the
- * same marks changes nothing. A row carries its own 'counted' flag, so flipping
- * present -> absent gives the session back and flipping it again does not take a
- * second one.
+ * Put one or more people on a class's list. Each of them loses one session.
  *
- * $sessionId identifies a class that already has a record. When it is empty the
- * class is one the weekly pattern only suggests, being saved for the very first
- * time: $date + $start identify which suggestion, the times are read from the
- * pattern AS IT STANDS NOW, and a real record is written in the same commit as
- * the marks. From that moment the record is the truth, and a later edit to the
- * pattern cannot re-time this register.
+ * IDEMPOTENT by (class, student). Somebody already on the list is skipped
+ * whole: no second row, no second deduction. That is what makes it safe to
+ * have no Save button. A double tap on slow studio wifi, a refresh, or "same
+ * as last week" run twice all land on the same list and the same balances.
  *
- * @param array<string,string> $marks student_id => status
+ * $sessionId identifies a class that already has a record. When it is empty
+ * the class is one the weekly pattern only suggests and nobody has been added
+ * to it yet: $date + $start say which suggestion, the times are read from the
+ * pattern AS IT STANDS NOW, and a real record is written into sessions.json in
+ * the same commit as the names. From that moment the record is the truth, and
+ * a later edit to the pattern cannot re-time it.
+ *
+ * @param string[] $studentIds
+ * @return array{ok:bool,msg:string,added:int}
  */
-function jfsd_save_attendance(string $sessionId, string $date, string $start, array $marks, string $user): array
+function jfsd_add_attendees(string $sessionId, string $date, string $start, array $studentIds, string $user): array
 {
-    $result = jfsd_transaction(static function () use ($sessionId, $date, $start, $marks, $user): array {
+    $result = jfsd_transaction(static function () use ($sessionId, $date, $start, $studentIds, $user): array {
         $sessions   = jfsd_read('sessions');
         $attendance = jfsd_read('attendance');
         $students   = jfsd_read('students');
         $byId       = jfsd_index_students($students);
 
         $now        = jfsd_now_iso();
-        $deducted   = 0;
-        $restored   = 0;
-        $dupRemoved = 0;
         $newSession = null;
 
         if ($sessionId === '') {
@@ -996,11 +1046,11 @@ function jfsd_save_attendance(string $sessionId, string $date, string $start, ar
                 }
             }
             if ($entry === null) {
-                return ['ok' => false, 'msg' => 'That class is not on the calendar, so nothing was saved.'];
+                return ['ok' => false, 'msg' => 'That class is not on the calendar, so nobody was added.', 'added' => 0];
             }
             // Two phones, one class: the other one may have written the record
             // seconds ago. Re-use it rather than creating a second class at the
-            // same time, which would split the register in half.
+            // same time, which would split the list in half.
             foreach (jfsd_sessions_on_date($sessions, $date) as $s) {
                 if ((string) ($s['start'] ?? '') === $start) {
                     $sessionId = (string) ($s['id'] ?? '');
@@ -1022,75 +1072,47 @@ function jfsd_save_attendance(string $sessionId, string $date, string $start, ar
                 $sessionId  = (string) $newSession['id'];
             }
         } elseif (jfsd_find_session($sessions, $sessionId) === null) {
-            return ['ok' => false, 'msg' => 'That class is not on the calendar, so nothing was saved.'];
+            return ['ok' => false, 'msg' => 'That class is not on the calendar, so nobody was added.', 'added' => 0];
         }
 
-        // Index this class's rows by student, collapsing any duplicates on
-        // (session_id, student_id) as we go. Keeping only the first means the
-        // 'counted' flag we later flip is the only one that exists; a duplicate
-        // that had already charged a session gives it back on the way out, so
-        // the ledger identity survives the cleanup.
-        $kept     = [];
-        $existing = [];
+        // Who is on this class already. Read once, then kept up to date as we
+        // go, so the same id twice in one submission still only adds once.
+        $already = [];
         foreach ($attendance as $row) {
-            if ((string) ($row['session_id'] ?? '') !== $sessionId) {
-                $kept[] = $row;
-                continue;
-            }
-            $sid = (string) ($row['student_id'] ?? '');
-            if ($sid !== '' && isset($existing[$sid])) {
-                if (jfsd_row_counted($row) && isset($byId[$sid])) {
-                    $byId[$sid]['sessions_remaining'] = (int) ($byId[$sid]['sessions_remaining'] ?? 0) + 1;
-                    $byId[$sid]['updated_at']         = $now;
-                }
-                $dupRemoved++;
-                continue;
-            }
-            $kept[] = $row;
-            if ($sid !== '') {
-                $existing[$sid] = count($kept) - 1;
+            if ((string) ($row['session_id'] ?? '') === $sessionId) {
+                $already[(string) ($row['student_id'] ?? '')] = true;
             }
         }
-        $attendance = $kept;
 
-        foreach ($marks as $studentId => $status) {
+        $names = [];
+        foreach ($studentIds as $studentId) {
             $studentId = (string) $studentId;
-            $status    = (string) $status;
-            if (!isset($byId[$studentId]) || !isset(JFSD_ATTENDANCE_STATUSES[$status])) {
+            if ($studentId === '' || isset($already[$studentId]) || !isset($byId[$studentId])) {
                 continue;
             }
-            $shouldCount = (bool) JFSD_ATTENDANCE_STATUSES[$status]['counts'];
+            $already[$studentId] = true;
+            $attendance[] = [
+                'id'         => jfsd_id('att'),
+                'session_id' => $sessionId,
+                'student_id' => $studentId,
+                'counted'    => true,
+                'marked_at'  => $now,
+                'marked_by'  => $user,
+            ];
+            // The ONLY place a session moves when somebody is added. A balance
+            // at or below zero is not a reason to stop: it goes negative, the
+            // person turns up on the list that needs chasing, and nothing here
+            // ever blocks.
+            $byId[$studentId]['sessions_remaining'] = (int) ($byId[$studentId]['sessions_remaining'] ?? 0) - 1;
+            $byId[$studentId]['updated_at']         = $now;
+            $names[] = (string) ($byId[$studentId]['name'] ?? 'Somebody');
+        }
 
-            if (isset($existing[$studentId])) {
-                $idx        = $existing[$studentId];
-                $wasCounted = jfsd_row_counted($attendance[$idx]);
-                $attendance[$idx]['status']    = $status;
-                $attendance[$idx]['marked_at'] = $now;
-                $attendance[$idx]['marked_by'] = $user;
-                $attendance[$idx]['counted']   = $shouldCount;
-            } else {
-                $wasCounted   = false;
-                $attendance[] = [
-                    'id'         => jfsd_id('att'),
-                    'session_id' => $sessionId,
-                    'student_id' => $studentId,
-                    'status'     => $status,
-                    'counted'    => $shouldCount,
-                    'marked_at'  => $now,
-                    'marked_by'  => $user,
-                ];
-            }
-
-            // The delta is the ONLY place sessions move for attendance.
-            if ($shouldCount && !$wasCounted) {
-                $byId[$studentId]['sessions_remaining'] = (int) ($byId[$studentId]['sessions_remaining'] ?? 0) - 1;
-                $byId[$studentId]['updated_at']         = $now;
-                $deducted++;
-            } elseif (!$shouldCount && $wasCounted) {
-                $byId[$studentId]['sessions_remaining'] = (int) ($byId[$studentId]['sessions_remaining'] ?? 0) + 1;
-                $byId[$studentId]['updated_at']         = $now;
-                $restored++;
-            }
+        if (!$names) {
+            // Everybody asked for was already there. Nothing is written at all,
+            // not even the class record: an empty record says no more than the
+            // weekly pattern already says.
+            return ['ok' => true, 'msg' => 'Already on the list, so nothing changed.', 'added' => 0];
         }
 
         // Rebuild students in original order with the updated rows.
@@ -1101,13 +1123,13 @@ function jfsd_save_attendance(string $sessionId, string $date, string $start, ar
         }
 
         // ONE atomic write. Committing attendance first and students second used
-        // to leave every row stamped counted:true with no session deducted — a
+        // to leave every row stamped counted:true with no session deducted, a
         // state no amount of re-saving could repair, because the counted flag
         // made the delta a permanent no-op.
         //
         // sessions.json goes FIRST in the set for the same reason at one remove:
-        // a class record with no marks against it yet is harmless and re-savable,
-        // while marks pointing at a class that was never written are orphans.
+        // a class record with nobody against it yet is harmless, while names
+        // pointing at a class that was never written are orphans.
         $sets = [];
         if ($newSession !== null) {
             $sets['sessions'] = $sessions;
@@ -1118,22 +1140,113 @@ function jfsd_save_attendance(string $sessionId, string $date, string $start, ar
         if (!jfsd_write_all($sets)) {
             return [
                 'ok'  => false,
-                'msg' => 'Nothing was saved, so please try again. The register and the session balances '
+                'msg' => 'Nothing was saved, so please try again. The list and the session balances '
                     . 'are both exactly as they were.',
+                'added' => 0,
             ];
         }
 
-        $bits = [];
-        if ($deducted > 0)   { $bits[] = $deducted . ' session' . ($deducted === 1 ? '' : 's') . ' deducted'; }
-        if ($restored > 0)   { $bits[] = $restored . ' session' . ($restored === 1 ? '' : 's') . ' given back'; }
-        if ($dupRemoved > 0) { $bits[] = $dupRemoved . ' duplicate row' . ($dupRemoved === 1 ? '' : 's') . ' tidied up'; }
-        $suffix = $bits ? ' (' . implode(', ', $bits) . ').' : ' (no change to session balances).';
-
-        return ['ok' => true, 'msg' => 'Register saved' . $suffix];
+        $n = count($names);
+        return [
+            'ok'    => true,
+            'msg'   => jfsd_join_names($names) . ($n === 1 ? ' is' : ' are') . ' on the list. '
+                . $n . ' session' . ($n === 1 ? '' : 's') . ' off.',
+            'added' => $n,
+        ];
     });
 
     if (!is_array($result)) {
-        return ['ok' => false, 'msg' => 'The data files are busy or unavailable. Nothing was saved, so please try again.'];
+        return [
+            'ok'    => false,
+            'msg'   => 'The data files are busy or unavailable. Nothing was saved, so please try again.',
+            'added' => 0,
+        ];
+    }
+    return $result;
+}
+
+/**
+ * Take one person off a class's list and give the session back.
+ *
+ * Idempotent the other way round: somebody who is not on the list is not an
+ * error, because the only way to ask for that is to tap twice. Every row that
+ * charged gives its session back, so a duplicate that got onto disk some other
+ * way is repaired by the same tap rather than stranding a session.
+ *
+ * @return array{ok:bool,msg:string,removed:int}
+ */
+function jfsd_remove_attendee(string $sessionId, string $studentId): array
+{
+    if ($sessionId === '' || $studentId === '') {
+        return ['ok' => false, 'msg' => 'That person could not be identified, so nothing changed.', 'removed' => 0];
+    }
+
+    $result = jfsd_transaction(static function () use ($sessionId, $studentId): array {
+        $attendance = jfsd_read('attendance');
+        $students   = jfsd_read('students');
+        $byId       = jfsd_index_students($students);
+        $now        = jfsd_now_iso();
+
+        $kept     = [];
+        $giveBack = 0;
+        foreach ($attendance as $row) {
+            if ((string) ($row['session_id'] ?? '') === $sessionId
+                && (string) ($row['student_id'] ?? '') === $studentId) {
+                if (jfsd_row_counted($row)) {
+                    $giveBack++;
+                }
+                continue;
+            }
+            $kept[] = $row;
+        }
+
+        $removed = count($attendance) - count($kept);
+        if ($removed === 0) {
+            return ['ok' => true, 'msg' => 'Already off the list, so nothing changed.', 'removed' => 0];
+        }
+
+        $name = 'That person';
+        if (isset($byId[$studentId])) {
+            $name = (string) ($byId[$studentId]['name'] ?? $name);
+            if ($giveBack > 0) {
+                $byId[$studentId]['sessions_remaining'] = (int) ($byId[$studentId]['sessions_remaining'] ?? 0) + $giveBack;
+                $byId[$studentId]['updated_at']         = $now;
+            }
+        }
+
+        $updatedStudents = [];
+        foreach ($students as $s) {
+            $id = (string) ($s['id'] ?? '');
+            $updatedStudents[] = $byId[$id] ?? $s;
+        }
+
+        // One atomic write, for the same reason as adding: the row and the
+        // balance are one fact and must never land separately.
+        if (!jfsd_write_all(['attendance' => $kept, 'students' => $updatedStudents])) {
+            return [
+                'ok'  => false,
+                'msg' => 'Nothing was saved, so please try again. The list and the session balances '
+                    . 'are both exactly as they were.',
+                'removed' => 0,
+            ];
+        }
+
+        return [
+            'ok'  => true,
+            'msg' => $name . ' came off the list'
+                . ($giveBack > 0
+                    ? ' and got ' . $giveBack . ' session' . ($giveBack === 1 ? '' : 's') . ' back.'
+                    : '.'),
+            'removed' => $removed,
+        ];
+    });
+
+    if (!is_array($result)) {
+        return [
+            'ok'      => false,
+            'msg'     => 'The data files are busy or unavailable. Nothing was saved, so please try again.',
+            'removed' => 0,
+        ];
     }
     return $result;
 }

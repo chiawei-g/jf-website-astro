@@ -1,19 +1,23 @@
 <?php
 declare(strict_types=1);
 
-// JF Self Defense admin — the class calendar and the register.
+// JF Self Defense admin — the class calendar and who came.
 //
-// Three screens, one file:
-//   calendar  no date in the URL. A month at a glance: which days have a class,
-//             which registers are still to take, and how many turned up.
-//   day       ?date=YYYY-MM-DD. The classes on one date, earliest first, plus a
-//             way to put another one on that day.
-//   register  ?date=...&class=ses_...  (a class that already has a record)
-//             ?date=...&at=HH:MM       (one the weekly pattern only suggests)
+// ONE page, and there is no second one. Tapping a date does a round trip to
+// this same file and comes back with that day written under the grid, with the
+// browser landed on it through the #day fragment. A day with no class behaves
+// exactly the same way: it says so at the bottom and offers to put one on.
 //
-// The second form of the register URL survives the class being written for the
-// first time: once a record exists at that start time, the same link resolves to
-// the record instead of the suggestion.
+// Attendance is a LIST OF WHO TURNED UP, built by typing a name:
+//     on the list  =  came  =  one session off
+//     not on it    =  did not come, and there is nothing to record
+// There is no absent, no excused, no late, and nobody is on the list until he
+// puts them there. Around fifty people are on the books and four or five are
+// in any one class, so asking him to work down fifty rows was the wrong shape.
+//
+// Every add and every remove is its own POST and takes effect immediately, so
+// there is no Save button to forget and no half-finished state to warn about.
+// Adding is idempotent by (class, student), which is what makes that safe.
 
 define('JFSD_ADMIN', true);
 require_once __DIR__ . '/auth.php';
@@ -24,129 +28,106 @@ admin_require_auth();
 $user  = admin_current_user() ?? '';
 $today = jfsd_today();
 
+/**
+ * How many days back a class with nobody on it still asks for attention.
+ *
+ * Red has to be worth looking at. A class he can still fix from memory is
+ * worth a flag; one from six weeks ago is a permanent stain on a calendar he
+ * cannot do anything about, and a grid that is always red stops meaning
+ * anything at all. A week is long enough to catch a Sunday he was away for.
+ */
+const JFSD_ATTENTION_DAYS = 7;
+
 /* ---------------------------------------------------------------------------
- * Links. Every one of these is echoed straight into an href, so the separator
- * is &amp; rather than a bare ampersand.
+ * Links. Every one of these is echoed into an href, so the separator is
+ * &amp; rather than a bare ampersand.
  * ------------------------------------------------------------------------- */
 
-function jfsd_month_href(string $ym): string
-{
-    return '/admin/attendance.php?m=' . rawurlencode($ym);
-}
-
+/** A date on the grid. The fragment is the whole point: it never leaves. */
 function jfsd_day_href(string $ymd): string
 {
-    return '/admin/attendance.php?date=' . rawurlencode($ymd);
+    return '/admin/attendance.php?date=' . rawurlencode($ymd) . '#day';
 }
 
-function jfsd_class_href(array $class): string
+/**
+ * A month step. The chosen day travels with it, so paging back and forth to
+ * look at something never quietly changes what is written underneath.
+ */
+function jfsd_month_href(string $ym, string $date): string
 {
-    $url = jfsd_day_href((string) $class['date']);
-    return ($class['stored'] ?? false)
-        ? $url . '&amp;class=' . rawurlencode((string) $class['id'])
-        : $url . '&amp;at=' . rawurlencode((string) $class['start']);
+    return '/admin/attendance.php?m=' . rawurlencode($ym) . '&amp;date=' . rawurlencode($date);
 }
 
 /* ---------------------------------------------------------------------------
- * What is on one date, and whether it still wants doing.
+ * What is on one date, and whether it wants looking at.
  * ------------------------------------------------------------------------- */
 
 /**
- * @param array<string,array{marked:int,in:int}> $counts
- * @param string|null $floor earliest date worth nagging about — the day the
- *        first student joined. Before anyone was on the roster there was
- *        nothing to mark, so painting those days red would be noise.
+ * @param array<string,int> $counts class id => how many came
+ * @param string|null $floor earliest date worth flagging — the day the first
+ *        student joined. Before anyone was on the books there was nobody to
+ *        add, so painting those days red would be noise.
  */
-function jfsd_day_summary(array $sessions, array $counts, string $ymd, string $today, ?string $floor): array
-{
-    $classes  = jfsd_classes_on_date($sessions, $ymd);
-    $attended = 0;
-    $done     = 0;
-    $open     = null;
+function jfsd_day_summary(
+    array $sessions,
+    array $counts,
+    string $ymd,
+    string $today,
+    ?string $floor,
+    string $windowFrom
+): array {
+    $classes = jfsd_classes_on_date($sessions, $ymd);
+    $came    = 0;
+    $empty   = 0;
+    $first   = null;
 
     foreach ($classes as $class) {
-        $id     = (string) $class['id'];
-        $marked = ($class['stored'] && isset($counts[$id])) ? (int) $counts[$id]['marked'] : 0;
-        if ($marked > 0) {
-            $done++;
-            $attended += (int) $counts[$id]['in'];
-        } elseif ($open === null) {
-            $open = $class;
+        $id = (string) $class['id'];
+        $n  = ($class['stored'] && isset($counts[$id])) ? (int) $counts[$id] : 0;
+        $came += $n;
+        if ($n === 0) {
+            $empty++;
+            if ($first === null) {
+                $first = $class;
+            }
         }
     }
 
     return [
-        'classes'  => $classes,
-        'total'    => count($classes),
-        'done'     => $done,
-        'attended' => $attended,
-        'open'     => $open,
-        'needs'    => $open !== null && $ymd <= $today && $floor !== null && $ymd >= $floor,
+        'classes' => $classes,
+        'total'   => count($classes),
+        'came'    => $came,
+        'empty'   => $empty,
+        'first'   => $first,
+        'needs'   => $empty > 0
+            && $ymd <= $today
+            && $ymd >= $windowFrom
+            && $floor !== null && $ymd >= $floor,
     ];
 }
 
-/** Plain sentence for a calendar cell, read out by screen readers and long-press. */
-function jfsd_day_spoken(string $ymd, array $sum): string
+/** Plain sentence for a calendar cell, read out by screen readers. */
+function jfsd_day_spoken(string $ymd, array $sum, bool $isToday): string
 {
-    $when = jfsd_date_long($ymd);
+    $when = jfsd_date_long($ymd) . ($isToday ? ', today' : '');
     if ($sum['total'] === 0) {
         return $when . ', no class';
     }
-    if ($sum['open'] === null) {
-        return $when . ', register taken, ' . $sum['attended'] . ' in class';
+    $came = (int) $sum['came'];
+    if ($sum['empty'] === 0) {
+        return $when . ', ' . $came . ($came === 1 ? ' person came' : ' people came');
     }
-    $what = $sum['total'] === 1
-        ? 'class at ' . jfsd_time_friendly((string) $sum['open']['start'])
-        : $sum['total'] . ' classes, next one at ' . jfsd_time_friendly((string) $sum['open']['start']);
-    return $when . ', ' . $what . ', register not taken';
-}
-
-/**
- * One row of the register. Identical markup for someone on the active roster and
- * someone who has since paused or left, so a historical mark stays correctable
- * either way.
- *
- * @param array<string,string> $saved student_id => saved status
- */
-function jfsd_reg_row(array $s, array $saved): void
-{
-    $sid     = (string) ($s['id'] ?? '');
-    $current = $saved[$sid] ?? '';
-    $left    = (int) ($s['sessions_remaining'] ?? 0);
-    $isLow   = $left <= 0 && ($s['plan'] ?? '') !== 'corporate';
-    // Said in full rather than as a minus sign. "-9 left" is a puzzle; "9 more
-    // than paid for" is a fact, and neither of them is a reason not to tap.
-    $balance = $left > 0
-        ? $left . ' left'
-        : ($left === 0 ? 'none left' : abs($left) . ' more than paid for');
-    ?>
-  <div class="adm-reg-row<?= $current !== '' ? ' is-marked' : '' ?>">
-    <div class="adm-reg-who">
-      <div class="adm-reg-name"><?= jfsd_e((string) ($s['name'] ?? '')) ?></div>
-      <div class="adm-reg-meta">
-        <span class="adm-reg-left<?= $isLow ? ' is-low' : '' ?>"><?= jfsd_e($balance) ?></span>
-        <span class="adm-reg-unmarked"<?= $current !== '' ? ' hidden' : '' ?>>not marked yet</span>
-      </div>
-    </div>
-    <div class="adm-seg">
-    <?php foreach (JFSD_ATTENDANCE_STATUSES as $key => $meta):
-        $inputId = 'm-' . jfsd_e($sid) . '-' . jfsd_e($key);
-        ?>
-      <input type="radio"
-             id="<?= $inputId ?>"
-             name="mark[<?= jfsd_e($sid) ?>]"
-             value="<?= jfsd_e($key) ?>"
-             data-mark="<?= jfsd_e($key) ?>"
-             <?= $current === $key ? 'checked' : '' ?>>
-      <label for="<?= $inputId ?>"><?= jfsd_e($meta['label']) ?></label>
-    <?php endforeach; ?>
-    </div>
-  </div>
-    <?php
+    $gap = $sum['empty'] === 1 ? 'nobody on the list' : $sum['empty'] . ' classes with nobody on the list';
+    return $came > 0 ? $when . ', ' . $came . ' came, ' . $gap : $when . ', ' . $gap;
 }
 
 /* ---------------------------------------------------------------------------
- * POST — every mutation redirects, so a refresh can never resubmit.
+ * POST — every change redirects, so a refresh can never resubmit.
+ *
+ * A change that WORKED goes back to the day itself, silently: the list on
+ * screen is the confirmation, and a banner at the top of the page would be
+ * out of sight below the fold anyway. A change that FAILED drops the fragment
+ * so the page opens at the top, where the banner is.
  * ------------------------------------------------------------------------- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     admin_require_csrf();
@@ -155,71 +136,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postDate = jfsd_line((string) ($_POST['date'] ?? ''), 10);
 
     if (!jfsd_valid_date($postDate)) {
-        jfsd_flash_set('error', 'That day could not be identified, so nothing was saved.');
+        jfsd_flash_set('error', 'That day could not be identified, so nothing was changed.');
         jfsd_redirect('/admin/attendance.php');
     }
-    $dayUrl = '/admin/attendance.php?date=' . rawurlencode($postDate);
+
+    $top  = '/admin/attendance.php?date=' . rawurlencode($postDate);
+    $done = $top . '#day';
+
+    /** @param array{ok:bool,msg:string} $result */
+    $settle = static function (array $result, string $type = 'error') use ($top, $done): void {
+        if ($result['ok'] ?? false) {
+            jfsd_redirect($done);
+        }
+        jfsd_flash_set($type, (string) ($result['msg'] ?? ''));
+        jfsd_redirect($top);
+    };
+
+    if ($action === 'add') {
+        // One name from the find field, or several from "same as last week".
+        // Both go through the same idempotent call, so neither can double up.
+        $raw = $_POST['student'] ?? '';
+        $ids = [];
+        foreach (is_array($raw) ? $raw : [$raw] as $one) {
+            if (is_string($one)) {
+                $id = jfsd_line($one, 40);
+                if ($id !== '') {
+                    $ids[$id] = true;
+                }
+            }
+        }
+        if (!$ids) {
+            jfsd_flash_set('warn', 'No name was chosen, so nobody was added.');
+            jfsd_redirect($top);
+        }
+        $settle(jfsd_add_attendees(
+            jfsd_line((string) ($_POST['class'] ?? ''), 40),
+            $postDate,
+            jfsd_line((string) ($_POST['at'] ?? ''), 5),
+            array_keys($ids),
+            $user
+        ));
+    }
+
+    if ($action === 'remove') {
+        $settle(jfsd_remove_attendee(
+            jfsd_line((string) ($_POST['class'] ?? ''), 40),
+            jfsd_line((string) ($_POST['student'] ?? ''), 40)
+        ));
+    }
 
     if ($action === 'add_class') {
-        // Studio wifi is slow and the button gets tapped twice. The register is
-        // idempotent by design and needs no token; adding a class is not.
+        // Studio wifi is slow and the button gets tapped twice. Adding and
+        // removing people is idempotent by design and needs no token; putting
+        // a new class on the calendar is not.
         if (!jfsd_nonce_spend()) {
             jfsd_flash_set('warn', 'That was the same class sent twice, so it was only added once.');
-            jfsd_redirect($dayUrl);
+            jfsd_redirect($top);
         }
-        jfsd_flash_result(jfsd_add_session(
+        $settle(jfsd_add_session(
             $postDate,
             jfsd_line((string) ($_POST['start'] ?? ''), 5),
             jfsd_line((string) ($_POST['end'] ?? ''), 5),
             jfsd_line((string) ($_POST['note'] ?? ''), 60),
             $user
         ));
-        jfsd_redirect($dayUrl);
     }
 
-    if ($action === 'save_register') {
-        $postClass = jfsd_line((string) ($_POST['class'] ?? ''), 40);
-        $postAt    = jfsd_line((string) ($_POST['at'] ?? ''), 5);
-        $back      = $dayUrl . ($postClass !== ''
-            ? '&class=' . rawurlencode($postClass)
-            : '&at=' . rawurlencode($postAt));
-
-        $rawMarks = $_POST['mark'] ?? [];
-        $marks    = [];
-        if (is_array($rawMarks)) {
-            foreach ($rawMarks as $studentId => $status) {
-                if (!is_string($studentId) || !is_string($status)) {
-                    continue;
-                }
-                $id = jfsd_line($studentId, 40);
-                if ($id !== '' && isset(JFSD_ATTENDANCE_STATUSES[$status])) {
-                    $marks[$id] = $status;
-                }
-            }
-        }
-
-        if (!$marks) {
-            jfsd_flash_set('warn', 'Nobody was marked, so nothing changed.');
-        } else {
-            jfsd_flash_result(jfsd_save_attendance($postClass, $postDate, $postAt, $marks, $user));
-        }
-        jfsd_redirect($back);
-    }
-
-    jfsd_redirect('/admin/attendance.php');
+    jfsd_redirect($done);
 }
 
 /* ---------------------------------------------------------------------------
- * GET — which of the three screens is this?
+ * GET — one month above, one day below. Always both.
  * ------------------------------------------------------------------------- */
 $sessions   = jfsd_read('sessions');
 $students   = jfsd_read('students');
 $attendance = jfsd_read('attendance');
 
-$counts = jfsd_register_counts($attendance);
+$counts = jfsd_attendance_counts($attendance);
 $roster = jfsd_active_students($students);
+$byId   = jfsd_index_students($students);
 
-// The day the first person joined. Nothing before it is ever painted as unfinished.
+// The day the first person joined. Nothing before it is ever painted red.
 $floor = null;
 foreach ($students as $s) {
     $joined = (string) ($s['joined_date'] ?? '');
@@ -228,467 +225,506 @@ foreach ($students as $s) {
     }
 }
 
-$dateParam  = jfsd_line((string) ($_GET['date'] ?? ''), 10);
-$classParam = jfsd_line((string) ($_GET['class'] ?? ''), 40);
-$atParam    = jfsd_line((string) ($_GET['at'] ?? ''), 5);
+$windowFrom = date('Y-m-d', (int) strtotime($today . ' -' . (JFSD_ATTENTION_DAYS - 1) . ' days'));
 
-$date    = jfsd_valid_date($dateParam) ? $dateParam : '';
-$class   = null;
-$missing = false;
+// The chosen day. No date in the URL means today, so the page opens on the one
+// day he is nearly always here for.
+$dateParam = jfsd_line((string) ($_GET['date'] ?? ''), 10);
+$date      = jfsd_valid_date($dateParam) ? $dateParam : $today;
 
-if ($date !== '' && ($classParam !== '' || $atParam !== '')) {
-    foreach (jfsd_classes_on_date($sessions, $date) as $candidate) {
-        $hit = $classParam !== ''
-            ? ($candidate['stored'] && (string) $candidate['id'] === $classParam)
-            : ((string) $candidate['start'] === $atParam);
-        if ($hit) {
-            $class = $candidate;
-            break;
-        }
-    }
-    $missing = $class === null;
-}
-
-$view = $class !== null ? 'register' : ($date !== '' ? 'day' : 'calendar');
-
-// Which month the grid shows. Always follows the date being looked at.
+// The month on the grid follows the chosen day unless he has stepped away.
 $monthParam = jfsd_line((string) ($_GET['m'] ?? ''), 7);
-if ($date !== '') {
-    $month = substr($date, 0, 7);
-} elseif (preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $monthParam) === 1) {
-    $month = $monthParam;
-} else {
-    $month = substr($today, 0, 7);
+$month      = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $monthParam) === 1
+    ? $monthParam
+    : substr($date, 0, 7);
+
+$first = DateTimeImmutable::createFromFormat('!Y-m-d', $month . '-01', new DateTimeZone(jfsd_tz()));
+if ($first === false) {
+    $first = new DateTimeImmutable($today . ' 00:00:00', new DateTimeZone(jfsd_tz()));
+    $month = $first->format('Y-m');
 }
+$lead      = (int) $first->format('N') - 1;
+$dayCount  = (int) $first->format('t');
+$cellCount = (int) (ceil(($lead + $dayCount) / 7) * 7);
+
+// Everything the month needs, worked out once.
+$summaries = [];
+$attention = 0;
+$monthCame = 0;
+for ($d = 1; $d <= $dayCount; $d++) {
+    $ymd = $month . '-' . sprintf('%02d', $d);
+    $sum = jfsd_day_summary($sessions, $counts, $ymd, $today, $floor, $windowFrom);
+    $summaries[$ymd] = $sum;
+    $monthCame += (int) $sum['came'];
+    if ($sum['needs']) {
+        $attention++;
+    }
+}
+
+$day     = jfsd_day_summary($sessions, $counts, $date, $today, $floor, $windowFrom);
+$isToday = $date === $today;
 
 jfsd_head('Attendance', 'attendance');
+jfsd_page_title('Attendance', 'Who came');
+?>
 
-/* ===========================================================================
- * SCREEN 1 — THE CALENDAR
- * ========================================================================= */
-if ($view === 'calendar'):
+<?php if (!$students): ?>
+  <div class="adm-alert adm-alert-warn">
+    <strong>There is nobody to add yet.</strong>
+    <p>
+      The calendar already knows the usual class times, but a name has to exist before it
+      can go on a list. <a href="/admin/students.php?new=1">Add your first student</a>, then
+      come back and tap the day.
+    </p>
+  </div>
+<?php endif; ?>
 
-    $first = DateTimeImmutable::createFromFormat('!Y-m-d', $month . '-01', new DateTimeZone(jfsd_tz()));
-    if ($first === false) {
-        $first = new DateTimeImmutable($today . ' 00:00:00', new DateTimeZone(jfsd_tz()));
-        $month = $first->format('Y-m');
-    }
-    $lead      = (int) $first->format('N') - 1;
-    $dayCount  = (int) $first->format('t');
-    $cellCount = (int) (ceil(($lead + $dayCount) / 7) * 7);
-
-    // Everything the month needs, worked out once.
-    $summaries = [];
-    $stillToDo = 0;
-    for ($d = 1; $d <= $dayCount; $d++) {
-        $ymd = $month . '-' . sprintf('%02d', $d);
-        $sum = jfsd_day_summary($sessions, $counts, $ymd, $today, $floor);
-        $summaries[$ymd] = $sum;
-        if ($sum['needs']) {
-            $stillToDo++;
-        }
-    }
-
-    $todaySum   = jfsd_day_summary($sessions, $counts, $today, $today, $floor);
-    $isThisMonth = $month === substr($today, 0, 7);
-
-    // The next date with a class on it, for the days there is nothing on.
-    $nextDate = '';
-    for ($i = 1; $i <= 14; $i++) {
-        $look = date('Y-m-d', (int) strtotime($today . ' +' . $i . ' days'));
-        if (jfsd_classes_on_date($sessions, $look) !== []) {
-            $nextDate = $look;
-            break;
-        }
-    }
-
-    jfsd_page_title('Attendance', 'Calendar');
-    ?>
-
-  <?php if (!$students): ?>
-    <div class="adm-panel">
-      <div class="adm-panel-h">
-        <h2 class="adm-panel-title">Nothing to mark yet</h2>
-      </div>
-      <div class="adm-panel-b">
-        <p class="adm-today-line">Nobody is on the roster, so there is no register to take.</p>
-        <p class="adm-hint">
-          The calendar below already knows the usual class times. Once there are students,
-          tap a day to open the class and mark who turned up, and the day starts showing
-          the number who came.
-        </p>
-      </div>
-    </div>
+<!-- ============ THE MONTH ============ -->
+<div class="adm-cal-nav">
+  <a class="adm-cal-step" href="<?= jfsd_month_href($first->modify('-1 month')->format('Y-m'), $date) ?>"
+     aria-label="Previous month" title="Previous month">&lsaquo;</a>
+  <a class="adm-cal-step" href="<?= jfsd_month_href($first->modify('+1 month')->format('Y-m'), $date) ?>"
+     aria-label="Next month" title="Next month">&rsaquo;</a>
+  <div class="adm-cal-heading">
+    <h2 class="adm-cal-month"><?= jfsd_e(jfsd_month_label($month)) ?></h2>
+  </div>
+  <?php if (!$isToday || $month !== substr($today, 0, 7)): ?>
+    <a class="adm-btn adm-btn-quiet" href="/admin/attendance.php">Today</a>
   <?php endif; ?>
-
-  <div class="adm-cal-nav">
-    <a class="adm-cal-step" href="<?= jfsd_month_href($first->modify('-1 month')->format('Y-m')) ?>"
-       aria-label="Previous month" title="Previous month">&lsaquo;</a>
-    <a class="adm-cal-step" href="<?= jfsd_month_href($first->modify('+1 month')->format('Y-m')) ?>"
-       aria-label="Next month" title="Next month">&rsaquo;</a>
-    <div class="adm-cal-heading">
-      <h2 class="adm-cal-month"><?= jfsd_e(jfsd_month_label($month)) ?></h2>
-      <p class="adm-cal-count">
-        <?php if (!$students): ?>
-          Usual class times shown
-        <?php elseif ($stillToDo > 0): ?>
-          <?= (int) $stillToDo ?> register<?= $stillToDo === 1 ? '' : 's' ?> still to take
-        <?php else: ?>
-          Every class marked
-        <?php endif; ?>
-      </p>
-    </div>
-    <?php if (!$isThisMonth): ?>
-      <a class="adm-btn adm-btn-quiet" href="/admin/attendance.php">This month</a>
-    <?php endif; ?>
-  </div>
-
-  <div class="adm-cal-frame">
-    <div class="adm-cal">
-      <?php foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $dow): ?>
-        <div class="adm-cal-dow"><?= jfsd_e($dow) ?></div>
-      <?php endforeach; ?>
-
-      <?php for ($cell = 0; $cell < $cellCount; $cell++):
-          $dayNum = $cell - $lead + 1;
-          if ($dayNum < 1 || $dayNum > $dayCount): ?>
-            <div class="adm-cal-cell is-pad" aria-hidden="true"></div>
-        <?php continue;
-          endif;
-          $ymd     = $month . '-' . sprintf('%02d', $dayNum);
-          $sum     = $summaries[$ymd];
-          $isToday = $ymd === $today;
-          $state   = 'is-none';
-          if ($sum['total'] > 0) {
-              $state = $sum['open'] === null ? 'is-done' : ($sum['needs'] ? 'is-todo' : 'is-ahead');
-          }
-          ?>
-        <a class="adm-cal-cell <?= $state ?><?= $isToday ? ' is-today' : '' ?>"
-           href="<?= jfsd_day_href($ymd) ?>"
-           aria-label="<?= jfsd_e(jfsd_day_spoken($ymd, $sum)) ?>">
-          <span class="adm-cal-date"><?= (int) $dayNum ?></span>
-          <?php if ($sum['total'] === 0): ?>
-          <?php elseif ($sum['open'] === null): ?>
-            <span class="adm-cal-in"><?= (int) $sum['attended'] ?></span>
-          <?php else: ?>
-            <span class="adm-cal-time"><?= jfsd_e(jfsd_time_short((string) $sum['open']['start'])) ?></span>
-          <?php endif; ?>
-          <?php if ($sum['total'] > 1): ?>
-            <span class="adm-cal-more"><?= (int) $sum['total'] ?> classes</span>
-          <?php endif; ?>
-        </a>
-      <?php endfor; ?>
-    </div>
-  </div>
-
-  <p class="adm-cal-legend">
-    A number is how many were in class that day. Red is a register still to take.
-  </p>
-
-  <div class="adm-now">
-    <p class="adm-now-when">Today, <?= jfsd_e(jfsd_date_long($today)) ?></p>
-    <?php if ($todaySum['total'] === 0): ?>
-      <p class="adm-now-line">
-        No class today.
-        <?= $nextDate !== '' ? 'The next one is ' . jfsd_e(jfsd_date_long($nextDate)) . '.' : '' ?>
-      </p>
-      <?php if ($nextDate !== ''): ?>
-        <a class="adm-btn adm-now-btn" href="<?= jfsd_day_href($nextDate) ?>">Open that day</a>
-      <?php endif; ?>
+  <?php /* Its own line under the month and the arrows, not squeezed beside
+           them: the sentence is long enough to wrap, and wrapping it under a
+           52px button is how it ends up reading as two broken fragments. */ ?>
+  <p class="adm-cal-count">
+    <?php if (!$students): ?>
+      Usual class times shown
+    <?php elseif ($attention > 0): ?>
+      <?= (int) $attention ?> class<?= $attention === 1 ? '' : 'es' ?> with nobody on the list
+    <?php elseif ($monthCame > 0): ?>
+      <?= (int) $monthCame ?> came to class this month
+    <?php elseif ($month > substr($today, 0, 7)): ?>
+      Still to come
     <?php else: ?>
-      <?php foreach ($todaySum['classes'] as $c):
-          $id     = (string) $c['id'];
-          $marked = ($c['stored'] && isset($counts[$id])) ? (int) $counts[$id]['marked'] : 0;
-          ?>
-        <div class="adm-now-class">
-          <p class="adm-now-line">
-            <b><?= jfsd_e(jfsd_time_friendly((string) $c['start'])) ?></b>
-            <?= $c['label'] !== '' ? jfsd_e($c['label']) . '. ' : '' ?>
-            <?php if ($marked > 0): ?>
-              Register taken, <?= (int) $counts[$id]['in'] ?> in class.
-            <?php else: ?>
-              Register not taken.
-            <?php endif; ?>
-          </p>
-          <a class="adm-btn <?= $marked > 0 ? '' : 'adm-btn-red ' ?>adm-now-btn" href="<?= jfsd_class_href($c) ?>">
-            <?= $marked > 0 ? 'Open the register' : 'Take the register' ?>
-          </a>
-        </div>
-      <?php endforeach; ?>
+      Nobody added this month
     <?php endif; ?>
-  </div>
+  </p>
+</div>
 
-<?php
-/* ===========================================================================
- * SCREEN 2 — ONE DAY
- * ========================================================================= */
-elseif ($view === 'day'):
+<div class="adm-cal-frame">
+  <div class="adm-cal">
+    <?php foreach (['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $dow): ?>
+      <div class="adm-cal-dow"><?= jfsd_e($dow) ?></div>
+    <?php endforeach; ?>
 
-    $sum      = jfsd_day_summary($sessions, $counts, $date, $today, $floor);
-    $backHtml = '<a class="adm-btn" href="' . jfsd_month_href($month) . '">Back to the calendar</a>';
-    jfsd_page_title('Attendance', jfsd_date_long($date), $backHtml);
-    ?>
+    <?php for ($cell = 0; $cell < $cellCount; $cell++):
+        $dayNum = $cell - $lead + 1;
+        if ($dayNum < 1 || $dayNum > $dayCount): ?>
+          <div class="adm-cal-cell is-pad" aria-hidden="true"></div>
+      <?php continue;
+        endif;
+        $ymd   = $month . '-' . sprintf('%02d', $dayNum);
+        $sum   = $summaries[$ymd];
+        $isNow = $ymd === $today;
+        $isSel = $ymd === $date;
 
-  <?php if ($missing): ?>
-    <div class="adm-alert adm-alert-warn">
-      That class is not on the calendar any more. Here is everything on this day instead.
-    </div>
-  <?php endif; ?>
-
-  <div class="adm-panel">
-    <div class="adm-panel-h">
-      <h2 class="adm-panel-title">Classes on this day</h2>
-      <p class="adm-panel-note"><?= jfsd_e(jfsd_date_friendly($date)) ?> &middot; Singapore time</p>
-    </div>
-    <div class="adm-panel-b is-flush">
-      <?php if ($sum['total'] === 0): ?>
-        <div class="adm-empty">
-          <strong>No class on this day.</strong>
-          Classes normally run on Monday and Wednesday evenings, and Saturday and Sunday
-          mornings. If one ran here anyway, put it on the calendar below.
-        </div>
-      <?php else: ?>
-        <div class="adm-day-list">
-          <?php foreach ($sum['classes'] as $c):
-              $id     = (string) $c['id'];
-              $marked = ($c['stored'] && isset($counts[$id])) ? (int) $counts[$id]['marked'] : 0;
-              $needs  = $marked === 0 && $date <= $today && $floor !== null && $date >= $floor;
-              ?>
-            <a class="adm-day-row<?= $needs ? ' is-todo' : '' ?>" href="<?= jfsd_class_href($c) ?>">
-              <span class="adm-day-time"><?= jfsd_e(jfsd_time_short((string) $c['start'])) ?></span>
-              <span class="adm-day-body">
-                <span class="adm-day-state">
-                  <?php if ($marked > 0): ?>
-                    Register taken &middot; <b><?= (int) $counts[$id]['in'] ?></b> in class
-                  <?php else: ?>
-                    Register not taken
-                  <?php endif; ?>
-                </span>
-                <span class="adm-day-when">
-                  <?= jfsd_e(jfsd_time_range((string) $c['start'], (string) $c['end'])) ?><?php
-                    if ($c['label'] !== '') { echo ' &middot; ' . jfsd_e((string) $c['label']); } ?>
-                </span>
-              </span>
-              <span class="adm-day-go"><?= $marked > 0 ? 'Open' : 'Take it' ?></span>
-            </a>
-          <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
-
-      <details class="adm-add">
-        <summary>Add a class at another time</summary>
-        <div class="adm-add-b">
-          <p class="adm-hint adm-mb">
-            For a time the venue moved, or a one-off somebody asked for. It only affects
-            this day.
-          </p>
-          <form class="trial-form" method="post" action="/admin/attendance.php">
-            <?= admin_csrf_field() ?>
-            <?= jfsd_nonce_field() ?>
-            <input type="hidden" name="action" value="add_class">
-            <input type="hidden" name="date" value="<?= jfsd_e($date) ?>">
-            <div class="adm-form-grid">
-              <label>Starts at
-                <input type="time" name="start" required>
-              </label>
-              <label>Finishes at
-                <input type="time" name="end" required>
-              </label>
-            </div>
-            <label>Note <span class="adm-opt">(optional)</span>
-              <input type="text" name="note" maxlength="60" autocomplete="off" placeholder="Makeup class">
-            </label>
-            <div class="adm-actions">
-              <button class="adm-btn adm-btn-red" type="submit">Add this class</button>
-            </div>
-          </form>
-        </div>
-      </details>
-    </div>
-  </div>
-
-<?php
-/* ===========================================================================
- * SCREEN 3 — THE REGISTER
- * ========================================================================= */
-else:
-
-    $classId = (string) $class['id'];
-
-    // Marks already saved for this exact class.
-    $saved = [];
-    if ($classId !== '') {
-        foreach ($attendance as $row) {
-            if ((string) ($row['session_id'] ?? '') === $classId) {
-                $saved[(string) ($row['student_id'] ?? '')] = (string) ($row['status'] ?? '');
+        /* Colour and glyph are independent, so the grid still reads with the
+           red taken away: a display NUMBER is how many came, a mono TIME is a
+           class nobody is on yet, and the date itself brightens through three
+           steps as a day goes from quiet to worth looking at. */
+        $state = 'is-none';
+        if ($sum['total'] > 0) {
+            if ($sum['needs']) {
+                $state = 'is-todo';
+            } elseif ($sum['came'] > 0) {
+                $state = 'is-done';
+            } else {
+                $state = 'is-open';
             }
         }
-    }
-
-    $byId = jfsd_index_students($students);
-
-    // Students on this register who have run out. Named here so the count under
-    // the heading is a fact rather than a warning, and so nothing on this screen
-    // ever suggests they cannot be marked in.
-    $lowCount = 0;
-    foreach ($roster as $s) {
-        if (($s['plan'] ?? '') !== 'corporate' && (int) ($s['sessions_remaining'] ?? 0) <= 0) {
-            $lowCount++;
-        }
-    }
-
-    /* Anyone already marked for this exact class who is no longer on the active
-       roster. They belong ON the register, with the same buttons: a session
-       charged to the wrong person has to stay correctable after that person is
-       paused or marked as left, and leaving them off made the mistake permanent.
-       They do not appear on future registers, which is the behaviour wanted. */
-    $rosterIds = [];
-    foreach ($roster as $s) {
-        $rosterIds[(string) ($s['id'] ?? '')] = true;
-    }
-    $offRoster = [];
-    foreach ($saved as $sid => $status) {
-        if (!isset($rosterIds[$sid]) && isset($byId[$sid])) {
-            $offRoster[] = $byId[$sid];
-        }
-    }
-    usort($offRoster, static fn(array $a, array $b): int =>
-        strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? '')));
-
-    $rowCount = count($roster) + count($offRoster);
-    $backHtml = '<a class="adm-btn" href="' . jfsd_day_href($date) . '">Back to the day</a>';
-    jfsd_page_title(jfsd_date_friendly($date), jfsd_time_friendly((string) $class['start']) . ' class', $backHtml);
-    ?>
-
-  <div class="adm-panel">
-    <div class="adm-panel-h">
-      <h2 class="adm-panel-title">Who turned up</h2>
-      <p class="adm-panel-note">
-        <?= jfsd_e(jfsd_time_range((string) $class['start'], (string) $class['end'])) ?><?php
-          if ((string) $class['label'] !== '') { echo ' &middot; ' . jfsd_e((string) $class['label']); } ?>
-      </p>
-    </div>
-
-    <?php if (!$roster && !$offRoster): ?>
-      <div class="adm-empty">
-        <strong>Nobody is on the roster yet.</strong>
-        This is where the class list appears, one name per row, with a tap for present,
-        late, absent or excused beside each of them. Add the people who come to class and
-        they will be waiting here.
-      </div>
-    <?php else: ?>
-      <form method="post" action="/admin/attendance.php" id="reg-form">
-        <?= admin_csrf_field() ?>
-        <input type="hidden" name="action" value="save_register">
-        <input type="hidden" name="date" value="<?= jfsd_e($date) ?>">
-        <input type="hidden" name="class" value="<?= jfsd_e($classId) ?>">
-        <input type="hidden" name="at" value="<?= jfsd_e((string) $class['start']) ?>">
-
-        <div class="adm-reg-top">
-          <div class="adm-reg-top-text">
-            <p class="adm-reg-top-line"><?= (int) count($roster) ?> on the roster. Tap each name.</p>
-            <?php if ($lowCount > 0): ?>
-              <p class="adm-reg-top-note">
-                <?= (int) $lowCount ?> of them <?= $lowCount === 1 ? 'has' : 'have' ?> no sessions left.
-                Mark them present as normal, and top them up when it suits.
-              </p>
-            <?php endif; ?>
-          </div>
-          <button class="adm-btn adm-btn-quiet" type="button" id="all-present">Mark everyone present</button>
-        </div>
-
-        <div class="adm-reg">
-          <?php foreach ($roster as $s) { jfsd_reg_row($s, $saved); } ?>
-        </div>
-
-        <?php if ($offRoster): ?>
-          <div class="adm-reg-group">
-            <h3 class="adm-reg-group-h">No longer on the roster</h3>
-            <p class="adm-reg-group-note">
-              Paused or gone, but marked for this class. They are here so a mark can still
-              be corrected. They will not appear on future registers.
-            </p>
-          </div>
-          <div class="adm-reg is-off-roster">
-            <?php foreach ($offRoster as $s) { jfsd_reg_row($s, $saved); } ?>
-          </div>
+        ?>
+      <a class="adm-cal-cell <?= $state ?><?= $isNow ? ' is-today' : '' ?><?= $isSel ? ' is-picked' : '' ?>"
+         href="<?= jfsd_day_href($ymd) ?>"
+         <?= $isSel ? 'aria-current="page"' : '' ?>
+         aria-label="<?= jfsd_e(jfsd_day_spoken($ymd, $sum, $isNow)) ?>">
+        <span class="adm-cal-date"><?= (int) $dayNum ?></span>
+        <?php if ($sum['came'] > 0): ?>
+          <span class="adm-cal-in"><?= (int) $sum['came'] ?></span>
+        <?php elseif ($sum['first'] !== null): ?>
+          <span class="adm-cal-time"><?= jfsd_e(jfsd_time_short((string) $sum['first']['start'])) ?></span>
         <?php endif; ?>
+        <?php if ($sum['total'] > 1): ?>
+          <span class="adm-cal-more"><?= (int) $sum['total'] ?> classes</span>
+        <?php endif; ?>
+      </a>
+    <?php endfor; ?>
+  </div>
+</div>
 
-        <div class="adm-reg-bar">
-          <div class="adm-reg-tally" aria-live="polite">
-            <p class="adm-reg-in"><b data-tally="in">0</b> in class</p>
-            <p class="adm-reg-progress">
-              <span data-tally="marked">0</span> of <?= (int) $rowCount ?> marked
-            </p>
-          </div>
-          <button class="adm-btn adm-btn-red adm-btn-save" type="submit">Save the register</button>
-        </div>
-      </form>
-    <?php endif; ?>
+<p class="adm-cal-legend">
+  Tap any day to open it below. A number is how many came. Red is a class in the last few
+  days with nobody on it yet.
+</p>
+
+<!-- ============ THE CHOSEN DAY — ALWAYS BELOW, NEVER ELSEWHERE ============ -->
+<?php /* tabindex only so the browser has something to land on when it follows
+         #day. The heading names the section rather than a fixed aria-label, so
+         the two can never drift apart. */ ?>
+<section class="adm-panel adm-day" id="day" tabindex="-1" aria-labelledby="day-title">
+  <div class="adm-panel-h">
+    <h2 class="adm-panel-title" id="day-title"><?= $isToday ? 'Today' : jfsd_e(jfsd_date_long($date)) ?></h2>
+    <p class="adm-panel-note"><?= jfsd_e(jfsd_date_friendly($date)) ?> &middot; Singapore time</p>
   </div>
 
+  <div class="adm-panel-b is-flush">
+    <?php if ($day['total'] === 0): ?>
+      <div class="adm-empty">
+        <strong>No classes on <?= jfsd_e(jfsd_date_long($date)) ?>.</strong>
+        Classes normally run on Monday and Wednesday evenings, and Saturday and Sunday
+        mornings. If one ran here anyway, put it on below.
+      </div>
+    <?php else: ?>
+      <?php foreach ($day['classes'] as $class):
+          $cid   = (string) $class['id'];
+          $start = (string) $class['start'];
+
+          // Who is on this class, in name order.
+          $onList = [];
+          foreach (jfsd_attendees($attendance, $class['stored'] ? $cid : '') as $sid) {
+              $onList[] = ['id' => $sid, 'student' => $byId[$sid] ?? null];
+          }
+          usort($onList, static fn(array $a, array $b): int => strcasecmp(
+              (string) ($a['student']['name'] ?? "\u{FFFF}"),
+              (string) ($b['student']['name'] ?? "\u{FFFF}")
+          ));
+
+          $onIds = [];
+          foreach ($onList as $row) {
+              $onIds[(string) $row['id']] = true;
+          }
+
+          // Same as last week: the equivalent class seven days back, minus
+          // anyone already here, minus anyone who has since stopped coming.
+          $repeat = [];
+          $repeatOn = 0;
+          $prev = jfsd_previous_week_class($sessions, $date, $start);
+          if ($prev !== null) {
+              foreach (jfsd_attendees($attendance, (string) ($prev['id'] ?? '')) as $sid) {
+                  $who = $byId[$sid] ?? null;
+                  if ($who === null || ($who['status'] ?? '') !== 'active') {
+                      continue;
+                  }
+                  if (isset($onIds[$sid])) {
+                      $repeatOn++;
+                      continue;
+                  }
+                  $repeat[] = $who;
+              }
+              usort($repeat, static fn(array $a, array $b): int =>
+                  strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? '')));
+          }
+
+          // Who is left to add.
+          $addable = [];
+          foreach ($roster as $s) {
+              if (!isset($onIds[(string) ($s['id'] ?? '')])) {
+                  $addable[] = $s;
+              }
+          }
+
+          $fieldId = 'c' . substr(hash('crc32b', $cid . '|' . $start), 0, 6);
+          ?>
+        <article class="adm-cls">
+          <div class="adm-cls-h">
+            <h3 class="adm-cls-when"><?= jfsd_e(jfsd_class_when($date, $start, (string) $class['end'])) ?></h3>
+            <p class="adm-cls-came">
+              <?php if ($onList): ?>
+                <b><?= count($onList) ?></b> came
+              <?php else: ?>
+                Nobody on the list yet
+              <?php endif; ?>
+            </p>
+            <?php if ((string) $class['label'] !== ''): ?>
+              <p class="adm-cls-note"><?= jfsd_e((string) $class['label']) ?></p>
+            <?php endif; ?>
+          </div>
+
+          <?php if ($onList): ?>
+            <ul class="adm-came">
+              <?php foreach ($onList as $row):
+                  $sid  = (string) $row['id'];
+                  $who  = $row['student'];
+                  $name = $who !== null ? (string) ($who['name'] ?? '') : '';
+                  $left = (int) ($who['sessions_remaining'] ?? 0);
+                  $low  = $who !== null && $left <= 0 && ($who['plan'] ?? '') !== 'corporate';
+                  ?>
+                <li class="adm-came-row">
+                  <span class="adm-came-who">
+                    <span class="adm-came-name"><?= $name !== '' ? jfsd_e($name) : 'Somebody no longer in your students' ?></span>
+                    <?php if ($who !== null && ($who['plan'] ?? '') !== 'corporate'): ?>
+                      <span class="adm-came-left<?= $low ? ' is-low' : '' ?>"><?= jfsd_e(jfsd_sessions_left_phrase($left)) ?></span>
+                    <?php endif; ?>
+                  </span>
+                  <form method="post" action="/admin/attendance.php">
+                    <?= admin_csrf_field() ?>
+                    <input type="hidden" name="action" value="remove">
+                    <input type="hidden" name="date" value="<?= jfsd_e($date) ?>">
+                    <input type="hidden" name="class" value="<?= jfsd_e($cid) ?>">
+                    <input type="hidden" name="student" value="<?= jfsd_e($sid) ?>">
+                    <button class="adm-btn adm-btn-quiet" type="submit">Remove</button>
+                  </form>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          <?php endif; ?>
+
+          <?php if ($repeat): ?>
+            <form class="adm-repeat" method="post" action="/admin/attendance.php">
+              <?= admin_csrf_field() ?>
+              <input type="hidden" name="action" value="add">
+              <input type="hidden" name="date" value="<?= jfsd_e($date) ?>">
+              <input type="hidden" name="class" value="<?= jfsd_e($cid) ?>">
+              <input type="hidden" name="at" value="<?= jfsd_e($start) ?>">
+              <?php foreach ($repeat as $s): ?>
+                <input type="hidden" name="student[]" value="<?= jfsd_e((string) ($s['id'] ?? '')) ?>">
+              <?php endforeach; ?>
+              <p class="adm-repeat-who">
+                Adds <?= jfsd_e(jfsd_join_names(array_map(
+                    static fn(array $s): string => (string) ($s['name'] ?? ''),
+                    $repeat
+                ))) ?>.
+                <?php if ($repeatOn > 0): ?>
+                  <span class="adm-repeat-sub">
+                    The other <?= $repeatOn === 1 ? 'one is' : (int) $repeatOn . ' are' ?> already here.
+                  </span>
+                <?php endif; ?>
+              </p>
+              <button class="adm-btn <?= $onList ? '' : 'adm-btn-red ' ?>adm-repeat-go" type="submit">
+                Same as last week
+              </button>
+            </form>
+          <?php endif; ?>
+
+          <?php if (!$roster): ?>
+            <p class="adm-cls-none">
+              Nobody is active in your students, so there is no name to add.
+              <a href="/admin/students.php">Open Students</a>
+            </p>
+          <?php elseif (!$addable): ?>
+            <p class="adm-cls-none">Everybody is already on this list.</p>
+          <?php else: ?>
+            <form class="adm-add" method="post" action="/admin/attendance.php" data-add>
+              <?= admin_csrf_field() ?>
+              <input type="hidden" name="action" value="add">
+              <input type="hidden" name="date" value="<?= jfsd_e($date) ?>">
+              <input type="hidden" name="class" value="<?= jfsd_e($cid) ?>">
+              <input type="hidden" name="at" value="<?= jfsd_e($start) ?>">
+
+              <?php /* Shown only once scripting is confirmed working. */ ?>
+              <div class="adm-add-find" data-add-find hidden>
+                <label class="adm-add-label" for="find-<?= jfsd_e($fieldId) ?>">Add someone who came</label>
+                <input class="adm-add-in" id="find-<?= jfsd_e($fieldId) ?>" type="search"
+                       placeholder="Type a few letters of a name"
+                       autocomplete="off" autocapitalize="words" spellcheck="false"
+                       enterkeyhint="done" data-add-in>
+              </div>
+
+              <?php /* The plain version. Works with no scripting at all, and it
+                       is the same control the find field drives, so there is one
+                       source of truth for who can be added. */ ?>
+              <div class="adm-add-pick" data-add-pick>
+                <label class="adm-add-label" for="pick-<?= jfsd_e($fieldId) ?>">Add someone who came</label>
+                <div class="adm-add-row">
+                  <select id="pick-<?= jfsd_e($fieldId) ?>" name="student" required data-add-sel>
+                    <option value="">Choose a name</option>
+                    <?php foreach ($addable as $s):
+                        $sLeft = (int) ($s['sessions_remaining'] ?? 0);
+                        $sLow  = $sLeft <= 0 && ($s['plan'] ?? '') !== 'corporate';
+                        $sBal  = ($s['plan'] ?? '') === 'corporate' ? '' : jfsd_sessions_left_phrase($sLeft);
+                        ?>
+                      <option value="<?= jfsd_e((string) ($s['id'] ?? '')) ?>"
+                              data-name="<?= jfsd_e((string) ($s['name'] ?? '')) ?>"
+                              data-search="<?= jfsd_e(strtolower((string) ($s['name'] ?? ''))) ?>"
+                              data-left="<?= jfsd_e($sBal) ?>"
+                              data-low="<?= $sLow ? '1' : '0' ?>">
+                        <?= jfsd_e((string) ($s['name'] ?? '')) ?><?= $sBal !== '' ? ' (' . jfsd_e($sBal) . ')' : '' ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                  <button class="adm-btn" type="submit">Add</button>
+                </div>
+              </div>
+
+              <div class="adm-hits" data-add-hits hidden></div>
+              <p class="adm-add-state" data-add-state aria-live="polite" hidden></p>
+            </form>
+          <?php endif; ?>
+        </article>
+      <?php endforeach; ?>
+    <?php endif; ?>
+
+    <details class="adm-add-class"<?= $day['total'] === 0 ? ' open' : '' ?>>
+      <summary>Add a class at another time</summary>
+      <div class="adm-add-class-b">
+        <p class="adm-hint adm-mb">
+          For a time the venue moved, or a one-off somebody asked for. It only affects
+          <?= jfsd_e(jfsd_date_long($date)) ?>.
+        </p>
+        <form class="trial-form" method="post" action="/admin/attendance.php">
+          <?= admin_csrf_field() ?>
+          <?= jfsd_nonce_field() ?>
+          <input type="hidden" name="action" value="add_class">
+          <input type="hidden" name="date" value="<?= jfsd_e($date) ?>">
+          <div class="adm-form-grid">
+            <label>Starts at
+              <input type="time" name="start" required>
+            </label>
+            <label>Finishes at
+              <input type="time" name="end" required>
+            </label>
+          </div>
+          <label>Note <span class="adm-opt">(optional)</span>
+            <input type="text" name="note" maxlength="60" autocomplete="off" placeholder="Makeup class">
+          </label>
+          <div class="adm-actions">
+            <button class="adm-btn adm-btn-red" type="submit">Add this class</button>
+          </div>
+        </form>
+      </div>
+    </details>
+  </div>
+</section>
+
 <script>
-/* Live tally, per-row feedback, "mark everyone present", and the unsaved-marks
-   guard. Everything here is convenience only — the numbers that matter are
-   recomputed server-side after every save. */
+/* Turns the plain name-picker into a type-and-tap field.
+ *
+ * The <select> stays in the page and stays the thing that gets submitted, so
+ * there is exactly one list of who can be added and the no-scripting path is
+ * the same form rather than a second implementation. With scripting off, the
+ * picker and its Add button are simply what you get. */
 (function () {
-  var form = document.getElementById('reg-form');
-  if (!form) { return; }
+  'use strict';
 
-  var rows = form.querySelectorAll('.adm-reg-row');
-  var outs = {};
-  ['in', 'marked'].forEach(function (k) {
-    outs[k] = form.querySelector('[data-tally="' + k + '"]');
-  });
+  var MAX_HITS = 8;
 
-  /* Armed by the first change, disarmed on submit. Without this, tapping a nav
-     link or the back button threw away a half-marked register in silence. */
-  var dirty  = false;
-  var saving = false;
-
-  function tally() {
-    var inRoom = 0;
-    var marked = 0;
-    rows.forEach(function (row) {
-      var picked = row.querySelector('input[type="radio"]:checked');
-      var note   = row.querySelector('.adm-reg-unmarked');
-      if (picked) {
-        marked++;
-        if (picked.value === 'present' || picked.value === 'late') { inRoom++; }
-        row.classList.add('is-marked');
-        if (note) { note.hidden = true; }
-      } else {
-        row.classList.remove('is-marked');
-        if (note) { note.hidden = false; }
-      }
-    });
-    if (outs['in'])     { outs['in'].textContent     = String(inRoom); }
-    if (outs.marked)    { outs.marked.textContent    = String(marked); }
+  function text(tag, cls, value) {
+    var el = document.createElement(tag);
+    if (cls) { el.className = cls; }
+    el.textContent = value;
+    return el;
   }
 
-  form.addEventListener('change', function () { dirty = true; tally(); });
-  form.addEventListener('submit', function () { saving = true; });
+  document.querySelectorAll('[data-add]').forEach(function (form) {
+    var find  = form.querySelector('[data-add-find]');
+    var input = form.querySelector('[data-add-in]');
+    var pick  = form.querySelector('[data-add-pick]');
+    var sel   = form.querySelector('[data-add-sel]');
+    var hits  = form.querySelector('[data-add-hits]');
+    var state = form.querySelector('[data-add-state]');
+    if (!find || !input || !pick || !sel || !hits || !state) { return; }
 
-  var allBtn = document.getElementById('all-present');
-  if (allBtn) {
-    allBtn.addEventListener('click', function () {
-      rows.forEach(function (row) {
-        var p = row.querySelector('input[data-mark="present"]');
-        if (p) { p.checked = true; }
+    var options = Array.prototype.slice.call(sel.options).filter(function (o) { return o.value; });
+    if (!options.length) { return; }
+
+    /* Swap the controls only now that everything needed is present. The select
+       keeps its name and its value; it is just no longer the thing he touches.
+       'required' comes off because a hidden required control blocks submit. */
+    find.hidden = false;
+    pick.hidden = true;
+    sel.required = false;
+
+    var busy = false;
+
+    function matching(query) {
+      var q = query.trim().toLowerCase();
+      if (q === '') { return []; }
+      return options.filter(function (o) {
+        var words = (o.getAttribute('data-search') || '').split(' ');
+        for (var i = 0; i < words.length; i++) {
+          if (words[i].indexOf(q) === 0) { return true; }
+        }
+        return false;
       });
-      dirty = true;
-      tally();
-    });
-  }
+    }
 
-  window.addEventListener('beforeunload', function (e) {
-    if (dirty && !saving) { e.preventDefault(); e.returnValue = ''; return ''; }
+    function choose(option) {
+      if (busy) { return; }
+      busy = true;
+      var name = option.getAttribute('data-name') || 'that person';
+      sel.value = option.value;
+      input.value = name;
+      input.disabled = true;
+      hits.hidden = true;
+      state.hidden = false;
+      state.textContent = 'Adding ' + name + '.';
+      form.submit();
+    }
+
+    function draw() {
+      var found = matching(input.value);
+      hits.textContent = '';
+
+      if (input.value.trim() === '') {
+        hits.hidden = true;
+        return;
+      }
+      hits.hidden = false;
+
+      if (!found.length) {
+        var none = text('p', 'adm-hits-none', 'Nobody by that name. ');
+        var link = document.createElement('a');
+        link.href = '/admin/students.php?new=1';
+        link.textContent = 'Add them to your students first';
+        none.appendChild(link);
+        none.appendChild(document.createTextNode('.'));
+        hits.appendChild(none);
+        return;
+      }
+
+      found.slice(0, MAX_HITS).forEach(function (option) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'adm-hit';
+        button.appendChild(text('span', 'adm-hit-name', option.getAttribute('data-name') || ''));
+        var left = option.getAttribute('data-left') || '';
+        if (left) {
+          button.appendChild(text(
+            'span',
+            'adm-hit-left' + (option.getAttribute('data-low') === '1' ? ' is-low' : ''),
+            left
+          ));
+        }
+        button.addEventListener('click', function () { choose(option); });
+        hits.appendChild(button);
+      });
+
+      if (found.length > MAX_HITS) {
+        hits.appendChild(text(
+          'p',
+          'adm-hits-more',
+          MAX_HITS + ' of ' + found.length + ' names. Type another letter.'
+        ));
+      }
+    }
+
+    input.addEventListener('input', draw);
+    input.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') { return; }
+      // Never let Enter submit the picker's empty value.
+      e.preventDefault();
+      var found = matching(input.value);
+      if (found.length) { choose(found[0]); }
+    });
   });
 
-  tally();
+  /* Acknowledge every other tap in the panel within the same frame, so a slow
+     round trip on studio wifi does not look like nothing happened. Every one of
+     these actions is safe to repeat, so this is feedback, not a guard. */
+  document.querySelectorAll('.adm-day form').forEach(function (form) {
+    form.addEventListener('submit', function () {
+      var button = form.querySelector('button[type="submit"]');
+      if (button) { setTimeout(function () { button.disabled = true; }, 0); }
+    });
+  });
 })();
 </script>
-
-<?php endif; ?>
 
 <?php jfsd_foot(); ?>

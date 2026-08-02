@@ -135,7 +135,7 @@ Set the `JFSD_PRIVATE_DIR` environment variable, or edit the fallback path in
 |---|---|
 | Sign-in, sessions, rate limiting | **Real** |
 | Student roster | **Real** |
-| Attendance registers | **Real** |
+| Class lists (who came) | **Real** |
 | Payment recording and session balances | **Real** |
 | Dashboard counts (attention, active, attended, money in) | **Real** — computed from your data |
 | Website traffic pane | **STUB. Invented numbers.** |
@@ -158,30 +158,46 @@ remove the `adm-demo` class and the `adm-demo-note` paragraphs, and delete the
 
 **Before class** — dashboard tells you who has run out. Chase them.
 
-**At class** — Attendance opens on a month calendar. Red means a register still
-needs taking; a number means that day is done and is how many were in class. Today's
-classes also sit under the grid with a button straight to the register. Tap each
-name, or "Mark everyone present" and correct the few who were not. Save. Anyone
-marked present or late loses one session automatically.
+**At class** — Attendance is **one page**. A month calendar at the top, and the
+chosen day written out underneath it. It opens on today. Tapping any date reloads
+the same page with that day below and lands you on it; nothing in this feature
+navigates anywhere else, and a day with no class behaves exactly the same way.
+
+Attendance is **a list of who turned up**, built by typing a name. Nobody is on the
+list until you put them there.
+
+- On the list = came = one session off.
+- Not on the list = did not come. No row, no deduction, nothing to set.
+
+There is no absent, no excused and no late, because there is no booking: people
+just turn up. **"Same as last week"** adds the same handful in one tap and names
+them before you commit. Every add and every remove takes effect the moment you tap
+it, so there is no Save button and nothing can be left half done.
+
+On the calendar: a number is how many came, red is a class **in the last seven
+days** with nobody on it, today is the date filled in, and the day you are looking
+at is the date outlined.
 
 **The venue moved a class, or somebody wants a one-off** — open the day, then
-"Add a class at another time". Start, finish, optional note. It affects that day
-only, and a day can carry as many classes as it needs to.
+"Add a class at another time" at the bottom of the same panel. Start, finish,
+optional note. It affects that day only, and a day can carry as many classes as it
+needs to. On a day with no class that panel is already open, because it is the only
+thing there is to do there.
 
 **When money arrives** — Payments → pick the student, type the amount, pick what it
 covers. Leave "sessions to add" blank and the usual number for that plan is used
 (8-pack → 8). The balance updates immediately.
 
-**Someone stops coming** — open them from the roster, "Mark as left". They vanish
-from *future* registers but **nothing is deleted** — their history stays, they remain
-on any register they were already marked on so a mistake can still be corrected, and
-you can set them back to Active any time.
+**Someone stops coming** — open them from the roster, "Mark as left". Their name
+stops coming up when you add somebody to a class, but **nothing is deleted**: their
+history stays, they remain on any class list they were already on so a mistake can
+still be corrected, and you can set them back to Active any time.
 
-Nothing double-counts. Saving the same register twice, or hitting refresh after
-saving, changes nothing — each attendance row remembers whether it already cost a
-session. Marking someone back to absent gives the session back, once. Tapping
-"Record payment" twice on slow wifi records it once: each form carries a one-shot
-token. Half-marking a register and then navigating away asks first.
+Nothing double-counts. Adding somebody who is already on the list does nothing at
+all — no second row, no second deduction — so a double tap on slow wifi, a refresh,
+or "Same as last week" run twice are all safe. Removing gives the session back, once.
+Tapping "Record payment" twice on slow wifi records it once: that form carries a
+one-shot token, and so does "Add this class".
 
 ---
 
@@ -191,7 +207,7 @@ token. Half-marking a register and then navigating away asks first.
 |---|---|
 | `index.php` | Dashboard. Today's classes, needs-attention list, stub analytics panes. |
 | `students.php` | Roster: list, search, add, edit, soft-delete. |
-| `attendance.php` | Month calendar, one day, and the register. Three screens, one file. |
+| `attendance.php` | The whole attendance feature: month calendar on top, the chosen day underneath. **One page, no second screen.** |
 | `payments.php` | Needs-attention list, record a payment, payment history. |
 | `login.php` | Sign-in form, bcrypt verify, rate limiting. |
 | `logout.php` | Clears the session. |
@@ -243,25 +259,34 @@ thousands separator are added at display time only.
 | `created_at`, `created_by` | |
 
 A record appears in two ways. An **adhoc** class exists the moment it is added. A
-**template** class is written the first time a register is saved on it — see "The
+**template** class is written the first time somebody is added to it — see "The
 class schedule" below.
 
-**`attendance.json`** — one row per student per class.
+**`attendance.json`** — one row per person who came to a class. **A row exists only
+because somebody was added.** There is no status field and no row for anybody who
+did not come.
 
 | Field | Notes |
 |---|---|
 | `id` | `att_` + 14 hex. |
-| `session_id` | The class this mark belongs to. |
+| `session_id` | The class they came to. |
 | `student_id` | |
-| `status` | `present` · `late` · `absent` · `excused` |
-| `counted` | **Whether this row has already deducted a session.** This is what makes saving idempotent. |
+| `counted` | **Whether this row has already deducted a session.** Always `true` on a row this admin writes. A row that has lost the flag is read as `true`, never `false` — see `jfsd_row_counted()`. |
 | `marked_at`, `marked_by` | |
 
-`(session_id, student_id)` is the natural key. Re-saving updates the existing row.
+`(session_id, student_id)` is the natural key. `jfsd_add_attendees()` skips anybody
+already on the class, so adding is idempotent and cannot deduct twice;
+`jfsd_remove_attendee()` deletes the row and hands the session back, and doing it
+twice is not an error.
 
-**A mark carries no date of its own.** The class record owns the date, so there is
+**A row carries no date of its own.** The class record owns the date, so there is
 exactly one place it can be read from and nothing that can drift out of step.
-Anything that counts marks per day joins through `jfsd_session_dates()`.
+Anything that counts per day joins through `jfsd_session_dates()`.
+
+> Late was dropped along with absent and excused: it cost a control on every row and
+> changed nothing in the ledger. If it is ever wanted back, it belongs as a per-row
+> toggle on the day panel writing a `late: true` flag, **not** as another status, and
+> `counted` stays `true` either way.
 
 **`payments.json`**
 
@@ -300,8 +325,9 @@ ledger figure back. That panel should always be empty.
 Students on the **`corporate`** plan are left out of the needs-attention list even at
 zero sessions, because corporate work is invoiced per engagement rather than sold in
 class packs — a zero balance is normal for them and would be permanent noise on the
-list Jeffrey is meant to act on. They still appear on the roster and on registers,
-and marking them present still decrements (so the count is available if wanted). If
+list Jeffrey is meant to act on. They still appear on the roster and can still be
+added to a class, and adding them still decrements (so the count is available if
+wanted). If
 that turns out to be wrong, it is one condition in `jfsd_needs_attention()` in
 `_store.php`.
 
@@ -322,13 +348,13 @@ that is a public-site concern, and internally people just turn up.
 
 A class becomes real in `sessions.json` at one of two moments:
 
-- **a register is saved on it** — the times are copied from the pattern *as it
+- **the first person is added to it** — the times are copied from the pattern *as it
   stands at that instant* and frozen into the record;
 - **it is added by hand** from the day screen, for a time the venue moved or a
   one-off somebody asked for.
 
 So editing the table above changes what is *suggested* from now on, and **cannot
-reach back and re-time a register that has already been taken.** That is the whole
+reach back and re-time a class that has already happened.** That is the whole
 reason for the split: if Wednesday ever moves from 7pm to 8pm, every past Wednesday
 has to keep saying 7pm, because 7pm is when those people were actually in the room.
 `jfsd_classes_on_date()` matches a suggestion to a stored class by start time first,

@@ -98,9 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $isNew     = ($student['id'] === '');
 
         /* What the balance field was showing when this page was drawn. The save
-           refuses if the stored figure has moved since — otherwise marking the
-           register in one tab and fixing a typo in another silently hands the
-           session back, and the counted flag means it can never be re-charged. */
+           refuses if the stored figure has moved since — otherwise adding
+           somebody to a class in one tab and fixing a typo in another silently
+           hands the session back, and the counted flag means it can never be
+           re-charged. */
         $rawOrig = trim((string) ($_POST['sessions_remaining_orig'] ?? ''));
         if (preg_match('/^-?\d{1,7}$/', $rawOrig) === 1) {
             $formOrig = (int) $rawOrig;
@@ -325,8 +326,9 @@ jfsd_page_title('Roster', $showForm ? (($form['id'] ?? '') !== '' ? 'Edit studen
       </div>
       <div class="adm-panel-b">
         <p class="adm-hint adm-mb">
-          Marks <?= jfsd_e((string) $form['name']) ?> as gone and hides them from the class register.
-          Nothing is deleted — their attendance and payment history stays exactly where it is,
+          Marks <?= jfsd_e((string) $form['name']) ?> as gone, so their name stops coming up
+          when you add somebody to a class. Nothing is deleted: their attendance and payment
+          history stays exactly where it is, they stay on any class list they are already on,
           and you can set them back to Active at any time.
         </p>
         <form class="adm-inline-form" method="post" action="/admin/students.php"

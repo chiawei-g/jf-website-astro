@@ -29,7 +29,7 @@ $sessions   = jfsd_read('sessions');
 $today       = jfsd_today();
 $roster      = jfsd_active_students($students);
 $attention   = jfsd_needs_attention($students);
-$classCounts = jfsd_register_counts($attendance);
+$classCounts = jfsd_attendance_counts($attendance);
 $classesToday = jfsd_classes_on_date($sessions, $today);
 
 // This calendar month's takings, studio time. Voided rows and balance
@@ -53,15 +53,16 @@ foreach (jfsd_live_payments($payments) as $p) {
    student. */
 $drift = jfsd_reconcile($students, $payments, $attendance);
 
-/* Attendance across the last 7 days, as a simple health signal. A mark carries
+/* Attendance across the last 7 days, as a simple health signal. Being on a
+   class list IS having come, so there is nothing to filter for. A row carries
    no date of its own — the class record owns that — so this joins through it. */
 $weekAgo      = date('Y-m-d', (int) strtotime($today . ' -6 days'));
 $sessionDates = jfsd_session_dates($sessions);
-$weekPresent  = 0;
+$weekCame     = 0;
 foreach ($attendance as $row) {
     $d = $sessionDates[(string) ($row['session_id'] ?? '')] ?? '';
-    if ($d >= $weekAgo && $d <= $today && in_array($row['status'] ?? '', ['present', 'late'], true)) {
-        $weekPresent++;
+    if ($d >= $weekAgo && $d <= $today) {
+        $weekCame++;
     }
 }
 
@@ -81,9 +82,9 @@ jfsd_page_title('Today', 'Dashboard');
   <div class="adm-panel-b">
     <p class="adm-today-line">Nobody is on the roster, so there is nothing to show.</p>
     <p class="adm-hint">
-      Once people are on it, this page tells you who is coming, whether the register has
-      been taken, and who has run out of sessions and needs chasing. The calendar under
-      Attendance already knows the usual class times.
+      Once people are on it, this page tells you who came to class this week and who has
+      run out of sessions and needs chasing. The calendar under Attendance already knows
+      the usual class times.
     </p>
   </div>
 </div>
@@ -108,9 +109,9 @@ jfsd_page_title('Today', 'Dashboard');
   </a>
 
   <a class="adm-card" href="/admin/attendance.php">
-    <span class="adm-card-label">Attended this week</span>
-    <span class="adm-card-val"><?= (int) $weekPresent ?></span>
-    <span class="adm-card-sub">Marks of present or late since <?= jfsd_e(jfsd_date_friendly($weekAgo)) ?>.</span>
+    <span class="adm-card-label">Came to class this week</span>
+    <span class="adm-card-val"><?= (int) $weekCame ?></span>
+    <span class="adm-card-sub">People on a class list since <?= jfsd_e(jfsd_date_friendly($weekAgo)) ?>.</span>
   </a>
 
   <a class="adm-card" href="/admin/payments.php">
@@ -121,6 +122,17 @@ jfsd_page_title('Today', 'Dashboard');
 </div>
 
 <!-- ============ TODAY'S CLASSES ============ -->
+<?php /* One link out of this panel, not one per class. Attendance is a single
+         page now: it opens on today with the classes already written out at the
+         bottom, so a second button per row would land in the same place. */
+$todayGap = false;
+foreach ($classesToday as $c) {
+    $cid = (string) $c['id'];
+    if (!$c['stored'] || (int) ($classCounts[$cid] ?? 0) === 0) {
+        $todayGap = true;
+    }
+}
+?>
 <div class="adm-panel">
   <div class="adm-panel-h">
     <h2 class="adm-panel-title">Today &middot; <?= jfsd_e(jfsd_date_friendly($today)) ?></h2>
@@ -135,11 +147,8 @@ jfsd_page_title('Today', 'Dashboard');
       </div>
     <?php else: ?>
       <?php foreach ($classesToday as $c):
-          $cid    = (string) $c['id'];
-          $marked = ($c['stored'] && isset($classCounts[$cid])) ? (int) $classCounts[$cid]['marked'] : 0;
-          $inRoom = $marked > 0 ? (int) $classCounts[$cid]['in'] : 0;
-          $href   = '/admin/attendance.php?date=' . rawurlencode($today)
-              . ($c['stored'] ? '&amp;class=' . rawurlencode($cid) : '&amp;at=' . rawurlencode((string) $c['start']));
+          $cid  = (string) $c['id'];
+          $came = ($c['stored'] && isset($classCounts[$cid])) ? (int) $classCounts[$cid] : 0;
           ?>
         <div class="adm-today">
           <div class="adm-today-when">
@@ -148,28 +157,24 @@ jfsd_page_title('Today', 'Dashboard');
           </div>
           <div class="adm-today-body">
             <p class="adm-today-line">
-              <?php if ($marked > 0): ?>
-                Register taken. <b><?= (int) $inRoom ?></b> in class,
-                <?= (int) $marked ?> of <?= count($roster) ?> marked.
+              <?php if ($came > 0): ?>
+                <b><?= (int) $came ?></b> <?= $came === 1 ? 'person' : 'people' ?> on the list so far.
               <?php else: ?>
-                Register not taken yet. <b><?= count($roster) ?></b> active student<?= count($roster) === 1 ? '' : 's' ?> expected.
+                Nobody on the list yet.
               <?php endif; ?>
             </p>
             <p class="adm-hint">
               <?php if ((string) $c['label'] !== ''): ?>
                 <?= jfsd_e((string) $c['label']) ?>.
               <?php endif; ?>
-              Everyone on the active roster is listed on the register, and you mark who
-              actually turned up.
+              Type a name to put somebody on the list. Only the people who came go on it.
             </p>
-          </div>
-          <div class="adm-today-cta">
-            <a class="adm-btn adm-btn-red" href="<?= $href ?>">
-              <?= $marked > 0 ? 'Open register' : 'Take register' ?>
-            </a>
           </div>
         </div>
       <?php endforeach; ?>
+      <p class="adm-panel-more">
+        <a href="/admin/attendance.php#day"><?= $todayGap ? 'Open today and add who came' : 'Open today' ?></a>
+      </p>
     <?php endif; ?>
   </div>
 </div>
@@ -180,9 +185,9 @@ jfsd_page_title('Today', 'Dashboard');
     <div class="adm-panel-h">
       <h2 class="adm-panel-title">Balances that do not add up</h2>
       <p class="adm-panel-note">
-        The sessions on the roster disagree with the payments and attendance recorded for
-        these people. Nothing is lost — the payments and the register are the record, and
-        the button puts the roster back in line with them.
+        The sessions on the roster disagree with the payments and the class lists behind
+        them for these people. Nothing is lost: the payments and the class lists are what
+        actually happened, and the button puts the roster back in line with them.
       </p>
     </div>
     <div class="adm-panel-b is-flush">

@@ -17,6 +17,11 @@
   --adm-amber: #C88A2C;
   --adm-red-hover: #B22622;      /* the public site's hard-coded button hover */
   --adm-tap: 48px;               /* minimum tap target — this is used standing up */
+  /* A boundary that has to be findable at arm's length in a lit studio.
+     --line-2 is a divider hairline and measures ~1.8:1 against the page, under
+     the 3:1 an interactive edge needs; this clears it on bg, bg-2 and bg-3.
+     Used on the controls added with the attendance rebuild. */
+  --adm-edge: color-mix(in oklab, var(--ink) 44%, var(--bg));
   background: var(--bg);
   color: var(--ink);
   font-family: var(--f-body);
@@ -193,10 +198,13 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 
 .adm-cards-flush { margin-bottom: 0; }
 
-/* ---------- Today's classes ---------------------------------------------- */
+/* ---------- Today's classes (dashboard) ----------------------------------- */
+/* Information only. The one way in sits once at the foot of the panel, because
+   attendance is a single page that opens on today with the classes already
+   written out at the bottom of it. */
 .adm-today {
   display: grid;
-  grid-template-columns: 160px 1fr auto;
+  grid-template-columns: 160px 1fr;
   gap: 24px;
   align-items: center;
   padding: 24px;
@@ -220,11 +228,9 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 }
 .adm-today-line { margin: 0 0 6px; font-size: 16px; color: var(--ink-2); line-height: 1.5; }
 .adm-today-line b { color: var(--ink); font-weight: 600; }
-.adm-today-cta { display: flex; }
 
 @media (max-width: 760px) {
   .adm-today { grid-template-columns: 1fr; gap: 14px; padding: 20px 16px; }
-  .adm-today-cta .adm-btn { width: 100%; }
 }
 
 /* ---------- Panels ------------------------------------------------------- */
@@ -334,8 +340,8 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 }
 .adm-btn-red:hover { background: var(--adm-red-hover); border-color: var(--adm-red-hover); }
 /* Smaller type and tighter padding, but never a smaller tap target: this class
-   is on "Mark all present" (the most-tapped control in the app) and on "Void"
-   (which sits next to a data-loss confirm). 44px is the floor. */
+   is on "Remove" (which hands a session back) and on "Void" (which sits next to
+   a data-loss confirm). 44px is the floor. */
 .adm-btn-quiet { min-height: 44px; padding: 0 14px; font-size: 13px; color: var(--ink-2); }
 .adm-btn-danger { color: var(--red); border-color: color-mix(in oklab, var(--red) 55%, transparent); }
 .adm-btn-danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
@@ -386,173 +392,22 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 .adm-chip:hover { background: var(--bg-2); color: var(--ink); }
 .adm-chip.is-active { background: var(--red); border-color: var(--red); color: #fff; }
 
-/* ---------- Attendance register ------------------------------------------ */
-/* Marked rows settle into the panel background; unmarked rows are the ones that
-   still want something, so they are the ones that say so. */
-.adm-reg { display: flex; flex-direction: column; }
-.adm-reg-row {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto;
-  gap: 16px 24px;
-  align-items: center;
-  padding: 14px 24px;
-  border-bottom: 1px solid var(--line);
-  transition: background 0.15s;
-}
-.adm-reg-row:last-child { border-bottom: 0; }
-.adm-reg-row.is-marked { background: var(--bg-2); }
-.adm-reg-row:hover { background: var(--bg-3); }
-.adm-reg-who { min-width: 0; }
-.adm-reg-name { font-size: 17px; color: var(--ink); font-weight: 500; }
-.adm-reg-meta {
-  font-family: var(--f-mono);
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: var(--ink-3);
-  margin-top: 5px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: baseline;
-}
-/* A low balance is information, not a fault. Amber is this admin's caution
-   colour; red is reserved for "something needs you", and a student who has run
-   out is still marked in exactly like everyone else. */
-.adm-reg-left.is-low { color: var(--adm-amber); }
-
-/* Above the list: the count, the calm word about anyone who has run out, and
-   the shortcut that gets used before any tapping starts. */
-.adm-reg-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px 20px;
-  flex-wrap: wrap;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--line-2);
-}
-.adm-reg-top-text { min-width: 0; flex: 1 1 260px; }
-.adm-reg-top-line { margin: 0; font-size: 15px; color: var(--ink-2); }
-.adm-reg-top-note { margin: 6px 0 0; font-size: 13px; color: var(--adm-amber); line-height: 1.5; }
-
-.adm-seg { display: flex; flex-wrap: wrap; gap: 0; }
-.adm-seg input { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
-.adm-seg label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--adm-tap);
-  min-width: 82px;
-  padding: 0 14px;
-  border: 1px solid var(--line-2);
-  margin-left: -1px;
-  font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-}
-.adm-seg label:first-of-type { margin-left: 0; }
-.adm-seg label:hover { background: var(--bg-3); color: var(--ink); }
-.adm-seg input:focus-visible + label { outline: 2px solid var(--ink); outline-offset: 2px; }
-/* All four checked states have to be obvious at arm's length, on a phone, in a
-   lit studio. Absent and Excused used to differ from untouched by roughly a 5%
-   luminance step and a dashed border respectively — so a tap read as a miss,
-   and the row got tapped again. */
-.adm-seg input[value="present"]:checked + label { background: var(--red); border-color: var(--red); color: #fff; z-index: 1; }
-.adm-seg input[value="late"]:checked + label    { background: var(--adm-amber); border-color: var(--adm-amber); color: #16140F; z-index: 1; }
-.adm-seg input[value="absent"]:checked + label  { background: var(--ink-3); border-color: var(--ink-3); color: var(--bg); z-index: 1; }
-/* Inset shadow rather than border-width: a 2px border would shift the -1px
-   overlap and jog the whole segmented control sideways on every tap. */
-.adm-seg input[value="excused"]:checked + label {
-  background: var(--bg-3);
-  border-color: var(--ink-2);
-  color: var(--ink);
-  border-style: dashed;
-  box-shadow: inset 0 0 0 2px var(--ink-2);
-  z-index: 1;
-}
-
-.adm-reg-unmarked {
-  color: var(--adm-amber);
-  text-transform: lowercase;
-  letter-spacing: 0.04em;
-}
+/* Anything carrying the hidden attribute is hidden, whatever display it would
+   otherwise take. The progressive-enhancement swap on the add field depends on
+   this: those blocks are flex containers. */
 [hidden] { display: none !important; }
-
-/* Students no longer on the roster, kept on a historical register so their
-   marks stay correctable. */
-.adm-reg-group { padding: 20px 24px 0; }
-.adm-reg-group-h {
-  font-family: var(--f-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  margin: 0;
-  font-weight: 500;
-}
-.adm-reg-group-note { font-size: 13px; color: var(--ink-3); line-height: 1.5; margin: 6px 0 0; }
-.adm-reg.is-off-roster { border-top: 1px solid var(--line); margin-top: 14px; }
-.adm-reg.is-off-roster .adm-reg-name { color: var(--ink-2); }
-
-/* The bar rides the bottom of the screen while the list is long. Solid, not
-   translucent: the roster scrolls underneath it and a blurred smear of names
-   behind the Save button is the last thing this screen needs. */
-.adm-reg-bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  display: flex;
-  gap: 16px 20px;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  padding: 14px 24px calc(14px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--line-2);
-  background: var(--bg-2);
-}
-.adm-reg-tally { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; min-width: 0; }
-.adm-reg-in {
-  margin: 0;
-  font-size: 17px;
-  color: var(--ink-2);
-  white-space: nowrap;
-}
-.adm-reg-in b {
-  font-family: var(--f-display);
-  font-weight: 600;
-  font-size: 30px;
-  line-height: 1;
-  letter-spacing: var(--t-display-letter);
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-  margin-right: 4px;
-}
-.adm-reg-progress {
-  margin: 0;
-  font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-/* Bigger than every other control on the page, on purpose. */
-.adm-btn-save { min-height: 52px; padding: 0 30px; font-size: 15px; }
 
 /* ---------- The class calendar ------------------------------------------- */
 /* Read at arm's length, on a phone, with a class waiting. Two rules hold it
    together:
-     colour is only ever attention  — red means a register still wants taking,
-                                      and nothing else in the grid is coloured;
-     the glyph carries the rest     — a display-weight NUMBER is how many were
-                                      in class, a mono TIME is a class that has
-                                      not been marked. Colour and glyph are
+     colour is only ever attention  — red means a class in the last few days
+                                      with nobody on it, and nothing else in
+                                      the grid is coloured;
+     the glyph carries the rest     — a display-weight NUMBER is how many came,
+                                      a mono TIME is a class nobody is on yet,
+                                      and the date brightens through three
+                                      steps as a day goes from quiet to worth
+                                      looking at. Colour and glyph are
                                       independent, so the grid still reads with
                                       the red taken away. */
 .adm-cal-nav {
@@ -562,7 +417,7 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   flex-wrap: wrap;
   margin-bottom: 16px;
 }
-.adm-cal-heading { flex: 1 1 160px; min-width: 0; order: -1; width: 100%; }
+.adm-cal-heading { flex: 1 1 160px; min-width: 0; order: -1; }
 .adm-cal-month {
   margin: 0;
   font-family: var(--f-display);
@@ -572,8 +427,12 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   letter-spacing: var(--t-display-letter);
   color: var(--ink);
 }
+/* Last in the row and full width, so it wraps against the whole page rather
+   than against the 52px left over beside the month. */
 .adm-cal-count {
-  margin: 5px 0 0;
+  order: 1;
+  flex: 1 1 100%;
+  margin: 0;
   font-family: var(--f-mono);
   font-size: 11px;
   letter-spacing: 0.1em;
@@ -633,14 +492,15 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 .adm-cal-cell.is-pad { background: var(--bg); }
 .adm-cal-cell:hover { background: var(--bg-3); }
 .adm-cal-cell:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-/* The box is reserved on every cell, so today filling it in cannot make its row
-   a pixel taller than the rest of the month. */
+/* The box is reserved on every cell, so today filling it in — or the chosen day
+   outlining it — cannot make its row a pixel taller than the rest of the
+   month. */
 .adm-cal-date {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 17px;
+  min-width: 24px;
+  height: 19px;
   font-family: var(--f-mono);
   font-size: 11px;
   line-height: 1;
@@ -674,12 +534,18 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   color: var(--ink-3);
 }
 .adm-cal-cell.is-done  { background: var(--bg-2); }
-.adm-cal-cell.is-ahead .adm-cal-date { color: var(--ink-2); }
+/* A class with nobody on it and nothing to do about it: either still to come,
+   or long enough ago that he could not reconstruct it anyway. The time stays so
+   the month reads as a month, but quietly — twenty repetitions of "7pm" at full
+   strength drown out the two cells that actually want him. */
+.adm-cal-cell.is-open .adm-cal-date { color: var(--ink-2); }
+.adm-cal-cell.is-open .adm-cal-time { color: var(--ink-3); }
 .adm-cal-cell.is-todo {
   background: color-mix(in oklab, var(--red) 22%, var(--bg));
 }
 .adm-cal-cell.is-todo .adm-cal-date,
 .adm-cal-cell.is-todo .adm-cal-time { color: var(--ink); }
+.adm-cal-cell.is-todo .adm-cal-date { font-weight: 500; }
 .adm-cal-cell.is-todo .adm-cal-more { color: var(--ink-2); }
 .adm-cal-cell.is-todo:hover { background: color-mix(in oklab, var(--red) 32%, var(--bg)); }
 /* Today is the date itself, filled in. It reads the same on every state of cell,
@@ -689,91 +555,219 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   color: var(--bg);
   font-weight: 500;
 }
+/* The day written out below the grid. Same box as today, outlined instead of
+   filled — two treatments of one reserved box, so neither shifts a row and
+   neither steals the ring that focus needs. Inset shadow rather than a border
+   for the same reason: the box cannot change size. */
+.adm-cal-cell.is-picked:not(.is-todo) { background: var(--bg-3); }
+.adm-cal-cell.is-picked .adm-cal-date {
+  box-shadow: inset 0 0 0 1px var(--ink);
+  color: var(--ink);
+}
+/* Today AND picked, which is how the page opens. The fill wins and the date
+   goes back to reading against it — without this the bone-on-bone left an empty
+   white block where the number should be. */
+.adm-cal-cell.is-picked.is-today .adm-cal-date {
+  box-shadow: none;
+  color: var(--bg);
+}
 
 .adm-cal-legend {
-  margin: 12px 0 32px;
+  margin: 12px 0 28px;
   font-size: 13px;
   color: var(--ink-3);
   line-height: 1.5;
 }
 
-/* Today, straight under the grid: the one thing he came here to do, inside
-   thumb reach rather than at the top of the screen. */
-.adm-now {
-  border: 1px solid var(--line-2);
-  background: var(--bg-2);
-  padding: 20px 24px;
-  margin-bottom: 40px;
+/* ---------- The day, written out under the grid --------------------------- */
+/* One continuous surface with the calendar: the same display-weight number
+   means the same thing in both places. Nothing in here is a box inside a box —
+   every block is separated by a hairline, never by another border. */
+.adm-day {
+  /* Measured, not guessed: the sticky bar is 69px on a desktop window, so the
+     browser landing on #day would otherwise put the heading underneath it. */
+  scroll-margin-top: 88px;
 }
-.adm-now-when {
-  margin: 0 0 10px;
-  font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.adm-now-line { margin: 0; font-size: 16px; color: var(--ink-2); line-height: 1.5; }
-.adm-now-line b { color: var(--ink); font-weight: 600; }
-.adm-now-btn { margin-top: 14px; }
-.adm-now-class + .adm-now-class {
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-}
+.adm-day:focus { outline: none; }   /* focusable only so the fragment lands here */
 
-/* ---------- One day ------------------------------------------------------ */
-.adm-day-list { display: flex; flex-direction: column; }
-.adm-day-row {
-  display: grid;
-  grid-template-columns: 84px 1fr auto;
+.adm-cls { border-bottom: 1px solid var(--line); }
+.adm-cls:last-of-type { border-bottom: 0; }
+.adm-cls-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 6px 20px;
-  align-items: center;
-  min-height: 76px;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--line);
-  text-decoration: none;
-  color: inherit;
-  transition: background 0.15s;
+  flex-wrap: wrap;
+  padding: 22px 24px 14px;
 }
-.adm-day-row:last-of-type { border-bottom: 0; }
-.adm-day-row:hover { background: var(--bg-3); }
-.adm-day-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-.adm-day-time {
+/* Said the way he would say it: "Sunday 9.30–10.30am". */
+.adm-cls-when {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: var(--t-display-letter);
+  color: var(--ink);
+}
+.adm-cls-came { margin: 0; font-size: 15px; color: var(--ink-3); white-space: nowrap; }
+.adm-cls-came b {
   font-family: var(--f-display);
   font-weight: 600;
   font-size: 26px;
   line-height: 1;
   letter-spacing: var(--t-display-letter);
   color: var(--ink);
-  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  margin-right: 5px;
 }
-.adm-day-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.adm-day-state { font-size: 16px; color: var(--ink-2); line-height: 1.4; }
-.adm-day-state b { color: var(--ink); font-weight: 600; }
-.adm-day-when {
+.adm-cls-note { margin: 0; width: 100%; font-size: 13px; color: var(--ink-3); }
+.adm-cls-none { margin: 0; padding: 4px 24px 22px; font-size: 14px; color: var(--ink-3); line-height: 1.5; }
+.adm-cls-none a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line-2); }
+.adm-cls-none a:hover { color: var(--red); border-color: var(--red); }
+
+/* Who came. Being on this list is the whole record; there is no second state to
+   set and nothing to leave half done. */
+.adm-came { list-style: none; margin: 0; padding: 0; }
+.adm-came-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 16px;
+  align-items: center;
+  min-height: 60px;
+  padding: 8px 24px;
+  border-top: 1px solid var(--line);
+}
+.adm-came-who { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.adm-came-name { font-size: 17px; font-weight: 500; color: var(--ink); }
+.adm-came-left,
+.adm-hit-left {
   font-family: var(--f-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--ink-3);
 }
-.adm-day-go {
+/* Running out is information, not a fault. Amber is this admin's caution
+   colour; red means "something needs you", and somebody who has run out goes on
+   the list exactly like everybody else. */
+.adm-came-left.is-low,
+.adm-hit-left.is-low { color: var(--adm-amber); }
+
+/* The shortcut that gets used before any typing starts: the same four people
+   turn up most weeks. It says who it will add in a sentence first, so it is
+   something he reads rather than a control he has to trust. Loud only while the
+   list is empty, quiet once it is a top-up. */
+.adm-repeat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+  padding: 16px 24px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-2);
+}
+.adm-repeat-who { margin: 0; flex: 1 1 240px; font-size: 15px; color: var(--ink-2); line-height: 1.5; }
+.adm-repeat-sub { display: block; font-size: 13px; color: var(--ink-3); margin-top: 3px; }
+.adm-repeat-go { flex: 0 0 auto; }
+
+/* Add someone. With scripting it is a type-and-tap field; without it, the
+   picker underneath is what shows. Same form either way. */
+.adm-add { padding: 18px 24px 22px; border-top: 1px solid var(--line); }
+/* A name is a short thing to type. Left to itself this field runs the whole
+   width of a desktop panel, which reads as a paragraph box and puts the matches
+   a mouse-width away from where the letters went in. Matches the 480px the
+   add-a-class form beneath it already uses. */
+.adm-add-find,
+.adm-add-pick,
+.adm-hits,
+.adm-add-state { max-width: 480px; }
+.adm-add-label {
+  display: block;
+  margin-bottom: 8px;
   font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-size: 10px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink-3);
-  white-space: nowrap;
 }
-.adm-day-row.is-todo { background: color-mix(in oklab, var(--red) 14%, var(--bg)); }
-.adm-day-row.is-todo:hover { background: color-mix(in oklab, var(--red) 22%, var(--bg)); }
-.adm-day-row.is-todo .adm-day-state { color: var(--ink); }
-.adm-day-row.is-todo .adm-day-go { color: var(--ink-2); }
+.adm-add-row { display: flex; gap: 10px; align-items: stretch; }
+.adm-add-row .adm-btn { flex: 0 0 auto; }
 
-/* Adding a one-off. Folded away rather than thrown into a dialog, so the day it
-   belongs to stays on screen behind it. */
-.adm-add { border-top: 1px solid var(--line-2); }
-.adm-add > summary {
+/* Controls introduced with this rebuild, so they carry an edge that is actually
+   findable rather than the divider hairline the older ones inherited. */
+.adm-add-in,
+.adm-add-row select {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--adm-tap);
+  padding: 12px 14px;
+  border: 1px solid var(--adm-edge);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--f-body);
+  /* 16px is the floor that stops iOS zooming the page on focus, which on this
+     screen would push the calendar off to one side mid-tap. */
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.adm-add-in::placeholder { color: var(--ink-3); opacity: 1; }
+.adm-add-in:focus,
+.adm-add-row select:focus { border-color: var(--ink-2); }
+.adm-add-in:focus-visible,
+.adm-add-row select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.adm-add-in[disabled] { opacity: 0.6; }
+.adm-add-row select {
+  appearance: none;
+  color-scheme: dark;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path fill='none' stroke='%238A8780' stroke-width='1.5' d='M1 1l5 5 5-5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+.adm-add-row select option { background: var(--bg-3); color: var(--ink); }
+
+/* Matches. Full-width rows, because the finger that types the letters is the
+   same finger that taps the name. */
+.adm-hits { margin-top: 10px; display: flex; flex-direction: column; }
+.adm-hit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  position: relative;
+  width: 100%;
+  min-height: var(--adm-tap);
+  margin-top: -1px;
+  padding: 10px 16px;
+  border: 1px solid var(--adm-edge);
+  border-radius: 0;
+  background: var(--bg-2);
+  color: var(--ink);
+  font-family: var(--f-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.adm-hit:first-child { margin-top: 0; }
+.adm-hit:hover { background: var(--bg-3); border-color: var(--ink-2); z-index: 1; }
+.adm-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: -3px; z-index: 1; }
+.adm-hit-name { font-size: 17px; font-weight: 500; }
+.adm-hit-left { white-space: nowrap; }
+.adm-hits-none,
+.adm-hits-more { margin: 10px 0 0; font-size: 14px; color: var(--ink-3); line-height: 1.5; }
+.adm-hits-none a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line-2); }
+.adm-hits-none a:hover { color: var(--red); border-color: var(--red); }
+.adm-add-state { margin: 10px 0 0; font-size: 14px; color: var(--ink-2); }
+
+/* Adding a one-off class. Folded away rather than thrown into a dialog, so the
+   day it belongs to stays on screen behind it — and opened already on a day
+   that has no class, where it is the only thing there is to do. */
+.adm-add-class { border-top: 1px solid var(--line-2); }
+.adm-add-class > summary {
   display: flex;
   align-items: center;
   min-height: 52px;
@@ -785,19 +779,24 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   list-style: none;
   transition: background 0.15s;
 }
-.adm-add > summary::-webkit-details-marker { display: none; }
-.adm-add > summary::before {
+.adm-add-class > summary::-webkit-details-marker { display: none; }
+.adm-add-class > summary::before {
   content: "+";
   font-family: var(--f-mono);
   font-size: 17px;
   color: var(--ink-3);
   margin-right: 12px;
 }
-.adm-add[open] > summary::before { content: "\2212"; }
-.adm-add > summary:hover { background: var(--bg-2); }
-.adm-add > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-.adm-add-b { padding: 4px 24px 24px; border-top: 1px solid var(--line); }
-.adm-add-b .trial-form { max-width: 480px; }
+.adm-add-class[open] > summary::before { content: "\2212"; }
+.adm-add-class > summary:hover { background: var(--bg-2); }
+.adm-add-class > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.adm-add-class-b { padding: 4px 24px 24px; border-top: 1px solid var(--line); }
+.adm-add-class-b .trial-form { max-width: 480px; }
+/* .trial-form sizes its fields by padding alone, which computes to 43px and
+   quietly misses the 44px floor. Scoped rather than fixed at source, because
+   that class belongs to the public site and is used on every other admin form
+   as well. */
+.adm-add-class-b .trial-form input { min-height: var(--adm-tap); }
 
 /* ---------- Empty states ------------------------------------------------- */
 .adm-empty {
@@ -934,15 +933,7 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   .adm-who-email { display: none; }
   .adm-nav { order: 3; width: 100%; }
   .adm-nav-link { flex: 1 1 auto; justify-content: center; padding: 0 8px; }
-  .adm-reg-row { grid-template-columns: 1fr; padding: 16px 16px 18px; }
-  /* Four buttons across ~316px gives each about 79px, and "EXCUSED" at 11px
-     mono with 0.12em tracking needs ~55px plus 28px of padding. min-width:0 let
-     the box shrink under its own text, so the labels spilled across the
-     borders. Recovering ~30px of padding and tracking fixes it with headroom
-     down to 360px. */
-  .adm-seg label { flex: 1 1 0; min-width: 0; padding: 0 4px; letter-spacing: 0.06em; }
   .adm-panel-b { padding: 18px 16px; }
-  .adm-reg-group { padding: 16px 16px 0; }
   .adm-card-val { font-size: 34px; }
   .adm-swipe { display: block; }
 
@@ -958,21 +949,24 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   .adm-cal-month { font-size: 26px; }
   .adm-cal-cell { min-height: 64px; padding: 7px 1px 6px; }
   .adm-cal-legend { margin-bottom: 24px; }
-  .adm-now { padding: 18px 16px; }
-  .adm-now-btn { width: 100%; }
 
-  .adm-day-row { grid-template-columns: 62px 1fr auto; gap: 4px 12px; padding: 14px 16px; }
-  .adm-day-time { font-size: 22px; }
-  .adm-add > summary { padding: 0 16px; }
-  .adm-add-b { padding: 4px 16px 20px; }
-
-  .adm-reg-top { padding: 14px 16px; }
-  .adm-reg-top .adm-btn { width: 100%; }
-  /* Count on one line, Save across the full width underneath it. The Save is the
-     only thing in this bar that must never be mis-tapped. */
-  .adm-reg-bar { padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
-  .adm-reg-tally { width: 100%; justify-content: space-between; }
-  .adm-btn-save { width: 100%; }
+  /* The nav goes full width under 760px and its four links wrap onto a second
+     row on a phone, which measures 145px at 390px wide against 97px near the
+     breakpoint. Landing short would hide the heading behind the bar, so this
+     takes the worst case: overshooting only leaves the bottom of the grid in
+     view, which is no loss. */
+  .adm-day { scroll-margin-top: 152px; }
+  .adm-cls-h { padding: 20px 16px 12px; }
+  .adm-cls-when { font-size: 20px; }
+  .adm-cls-none { padding: 4px 16px 20px; }
+  .adm-came-row { padding: 8px 16px; }
+  .adm-repeat { padding: 14px 16px; }
+  /* On the phone this is the one tap that does the whole job, so it gets the
+     full width rather than sharing a line with the sentence above it. */
+  .adm-repeat-go { width: 100%; }
+  .adm-add { padding: 16px 16px 20px; }
+  .adm-add-class > summary { padding: 0 16px; }
+  .adm-add-class-b { padding: 4px 16px 20px; }
 }
 
 /* Nothing here is choreography — every transition is state feedback — but a

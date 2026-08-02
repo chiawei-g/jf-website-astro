@@ -127,6 +127,66 @@ function jfsd_time_range(string $start, string $end): string
     return jfsd_time_friendly($start) . ' to ' . jfsd_time_friendly($end);
 }
 
+/**
+ * "09:30", "10:30" -> "9.30–10.30am". "11:30", "13:00" -> "11.30am–1pm".
+ *
+ * The am/pm is said once when both ends fall in the same half of the day,
+ * which is how anyone would say it out loud.
+ */
+function jfsd_time_span(string $start, string $end): string
+{
+    $dash = "\u{2013}";
+    if (!jfsd_valid_time($start) || !jfsd_valid_time($end)) {
+        return jfsd_time_short($start) . $dash . jfsd_time_short($end);
+    }
+    $left     = jfsd_time_short($start);
+    $sameHalf = ((int) substr($start, 0, 2) < 12) === ((int) substr($end, 0, 2) < 12);
+    if ($sameHalf) {
+        $left = preg_replace('/(am|pm)$/', '', $left) ?? $left;
+    }
+    return $left . $dash . jfsd_time_short($end);
+}
+
+/** How a class is said out loud: "Sunday 9.30–10.30am". */
+function jfsd_class_when(string $ymd, string $start, string $end): string
+{
+    $day = DateTimeImmutable::createFromFormat('!Y-m-d', $ymd, new DateTimeZone(jfsd_tz()));
+    return ($day === false ? '' : $day->format('l') . ' ') . jfsd_time_span($start, $end);
+}
+
+/**
+ * A balance said in full, never as a minus sign.
+ *
+ * "-9 left" is a puzzle. "9 more than paid for" is a fact, and neither of them
+ * is a reason not to put somebody on the list.
+ */
+function jfsd_sessions_left_phrase(int $left): string
+{
+    if ($left > 0) {
+        return $left . ' left';
+    }
+    return $left === 0 ? 'none left' : abs($left) . ' more than paid for';
+}
+
+/**
+ * "Marcus", "Priya", "Ken" -> "Marcus, Priya and Ken".
+ *
+ * @param string[] $names
+ */
+function jfsd_join_names(array $names): string
+{
+    $names = array_values(array_filter($names, static fn($n): bool => (string) $n !== ''));
+    $count = count($names);
+    if ($count === 0) {
+        return '';
+    }
+    if ($count === 1) {
+        return (string) $names[0];
+    }
+    $last = array_pop($names);
+    return implode(', ', $names) . ' and ' . $last;
+}
+
 /** ISO timestamp -> "26 Jul 2026, 7:12pm". */
 function jfsd_datetime_friendly(?string $iso): string
 {
@@ -319,15 +379,16 @@ function jfsd_head(string $title, string $activeKey): void
     <?php
     /* A JSON file exists but could not be read or decoded. The store has already
        refused every write; the danger left is the SCREEN, which would otherwise
-       show "No students yet" and "Register not taken yet" — numbers that look
+       show "No students yet" and "Nobody on the list yet" — statements that look
        like facts and are not. Say the word "damaged" and draw nothing else. */
     $fault = jfsd_data_fault();
     if ($fault !== null): ?>
   <div class="adm-alert adm-alert-error">
     <strong>Your saved records could not be read, so this page is not showing your real figures.</strong>
     <p>
-      Nothing has been lost and nothing has been changed — but please do not add students,
-      take a register or record a payment until this is fixed, because none of it will save.
+      Nothing has been lost and nothing has been changed, but please do not add students,
+      add anybody to a class or record a payment until this is fixed, because none of it
+      will save.
     </p>
     <p>Please contact <?= jfsd_e(jfsd_support_contact()) ?>.</p>
     <details class="adm-detail">
