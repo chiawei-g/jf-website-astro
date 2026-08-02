@@ -73,6 +73,60 @@ function jfsd_date_friendly(?string $ymd): string
     return $d === false ? $ymd : $d->format('D j M Y');
 }
 
+/** ISO date -> "Saturday 26 July". No year: the calendar already says which. */
+function jfsd_date_long(?string $ymd): string
+{
+    $ymd = (string) $ymd;
+    if ($ymd === '') {
+        return '—';
+    }
+    $d = DateTimeImmutable::createFromFormat('!Y-m-d', $ymd, new DateTimeZone(jfsd_tz()));
+    return $d === false ? $ymd : $d->format('l j F');
+}
+
+/** "2026-08" -> "August 2026". */
+function jfsd_month_label(string $ym): string
+{
+    $d = DateTimeImmutable::createFromFormat('!Y-m-d', $ym . '-01', new DateTimeZone(jfsd_tz()));
+    return $d === false ? $ym : $d->format('F Y');
+}
+
+/** 24h clock time, exactly as stored. Rejects 24:00 and anything malformed. */
+function jfsd_valid_time(string $hm): bool
+{
+    return preg_match('/^([01][0-9]|2[0-3]):[0-5][0-9]$/', $hm) === 1;
+}
+
+/** "19:00" -> "7:00pm". Falls back to the raw value if unparseable. */
+function jfsd_time_friendly(string $hm): string
+{
+    if (!jfsd_valid_time($hm)) {
+        return $hm;
+    }
+    [$h, $m] = array_map('intval', explode(':', $hm));
+    $suffix  = $h < 12 ? 'am' : 'pm';
+    $h12     = $h % 12 === 0 ? 12 : $h % 12;
+    return $h12 . ':' . sprintf('%02d', $m) . $suffix;
+}
+
+/** "19:00" -> "7pm", "09:30" -> "9.30am". For places with no room to spare. */
+function jfsd_time_short(string $hm): string
+{
+    if (!jfsd_valid_time($hm)) {
+        return $hm;
+    }
+    [$h, $m] = array_map('intval', explode(':', $hm));
+    $suffix  = $h < 12 ? 'am' : 'pm';
+    $h12     = $h % 12 === 0 ? 12 : $h % 12;
+    return $m === 0 ? $h12 . $suffix : $h12 . '.' . sprintf('%02d', $m) . $suffix;
+}
+
+/** "19:00", "20:00" -> "7:00pm to 8:00pm". */
+function jfsd_time_range(string $start, string $end): string
+{
+    return jfsd_time_friendly($start) . ' to ' . jfsd_time_friendly($end);
+}
+
 /** ISO timestamp -> "26 Jul 2026, 7:12pm". */
 function jfsd_datetime_friendly(?string $iso): string
 {

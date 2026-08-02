@@ -62,7 +62,7 @@
 .adm-nav-link {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;   /* floor, not decoration — this bar is used standing up */
   padding: 0 14px;
   font-family: var(--f-mono);
   font-size: 11px;
@@ -212,12 +212,11 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   color: var(--ink);
   white-space: nowrap;
 }
-.adm-today-tag {
+.adm-today-range {
   font-family: var(--f-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--red);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
 }
 .adm-today-line { margin: 0 0 6px; font-size: 16px; color: var(--ink-2); line-height: 1.5; }
 .adm-today-line b { color: var(--ink); font-weight: 600; }
@@ -374,7 +373,7 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 .adm-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 16px;
   border: 1px solid var(--line-2);
   font-family: var(--f-mono);
@@ -388,6 +387,8 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 .adm-chip.is-active { background: var(--red); border-color: var(--red); color: #fff; }
 
 /* ---------- Attendance register ------------------------------------------ */
+/* Marked rows settle into the panel background; unmarked rows are the ones that
+   still want something, so they are the ones that say so. */
 .adm-reg { display: flex; flex-direction: column; }
 .adm-reg-row {
   display: grid;
@@ -396,23 +397,43 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   align-items: center;
   padding: 14px 24px;
   border-bottom: 1px solid var(--line);
+  transition: background 0.15s;
 }
 .adm-reg-row:last-child { border-bottom: 0; }
-.adm-reg-row:hover { background: var(--bg-2); }
+.adm-reg-row.is-marked { background: var(--bg-2); }
+.adm-reg-row:hover { background: var(--bg-3); }
 .adm-reg-who { min-width: 0; }
 .adm-reg-name { font-size: 17px; color: var(--ink); font-weight: 500; }
 .adm-reg-meta {
   font-family: var(--f-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  letter-spacing: 0.04em;
   color: var(--ink-3);
-  margin-top: 4px;
+  margin-top: 5px;
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
 }
-.adm-reg-meta .is-zero { color: var(--red); }
+/* A low balance is information, not a fault. Amber is this admin's caution
+   colour; red is reserved for "something needs you", and a student who has run
+   out is still marked in exactly like everyone else. */
+.adm-reg-left.is-low { color: var(--adm-amber); }
+
+/* Above the list: the count, the calm word about anyone who has run out, and
+   the shortcut that gets used before any tapping starts. */
+.adm-reg-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 20px;
+  flex-wrap: wrap;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line-2);
+}
+.adm-reg-top-text { min-width: 0; flex: 1 1 260px; }
+.adm-reg-top-line { margin: 0; font-size: 15px; color: var(--ink-2); }
+.adm-reg-top-note { margin: 6px 0 0; font-size: 13px; color: var(--adm-amber); line-height: 1.5; }
 
 .adm-seg { display: flex; flex-wrap: wrap; gap: 0; }
 .adm-seg input { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
@@ -436,7 +457,7 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 }
 .adm-seg label:first-of-type { margin-left: 0; }
 .adm-seg label:hover { background: var(--bg-3); color: var(--ink); }
-.adm-seg input:focus-visible + label { outline: 2px solid var(--red); outline-offset: 2px; }
+.adm-seg input:focus-visible + label { outline: 2px solid var(--ink); outline-offset: 2px; }
 /* All four checked states have to be obvious at arm's length, on a phone, in a
    lit studio. Absent and Excused used to differ from untouched by roughly a 5%
    luminance step and a dashed border respectively — so a tap read as a miss,
@@ -455,10 +476,11 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   z-index: 1;
 }
 
-/* Row-level confirmation that the tap landed. */
-.adm-reg-row.is-marked { box-shadow: inset 3px 0 0 var(--ink-2); }
-.adm-reg-row.is-marked .adm-reg-name { color: var(--ink); }
-.adm-reg-unmarked { color: var(--adm-amber); }
+.adm-reg-unmarked {
+  color: var(--adm-amber);
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+}
 [hidden] { display: none !important; }
 
 /* Students no longer on the roster, kept on a historical register so their
@@ -477,30 +499,305 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 .adm-reg.is-off-roster { border-top: 1px solid var(--line); margin-top: 14px; }
 .adm-reg.is-off-roster .adm-reg-name { color: var(--ink-2); }
 
+/* The bar rides the bottom of the screen while the list is long. Solid, not
+   translucent: the roster scrolls underneath it and a blurred smear of names
+   behind the Save button is the last thing this screen needs. */
 .adm-reg-bar {
   position: sticky;
   bottom: 0;
+  z-index: 2;
   display: flex;
-  gap: 16px;
+  gap: 16px 20px;
   align-items: center;
   flex-wrap: wrap;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: 14px 24px calc(14px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--line-2);
-  background: color-mix(in oklab, var(--bg-2) 94%, transparent);
-  backdrop-filter: blur(10px);
+  background: var(--bg-2);
 }
-.adm-tally {
+.adm-reg-tally { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; min-width: 0; }
+.adm-reg-in {
+  margin: 0;
+  font-size: 17px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.adm-reg-in b {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: var(--t-display-letter);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+}
+.adm-reg-progress {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Bigger than every other control on the page, on purpose. */
+.adm-btn-save { min-height: 52px; padding: 0 30px; font-size: 15px; }
+
+/* ---------- The class calendar ------------------------------------------- */
+/* Read at arm's length, on a phone, with a class waiting. Two rules hold it
+   together:
+     colour is only ever attention  — red means a register still wants taking,
+                                      and nothing else in the grid is coloured;
+     the glyph carries the rest     — a display-weight NUMBER is how many were
+                                      in class, a mono TIME is a class that has
+                                      not been marked. Colour and glyph are
+                                      independent, so the grid still reads with
+                                      the red taken away. */
+.adm-cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.adm-cal-heading { flex: 1 1 160px; min-width: 0; order: -1; width: 100%; }
+.adm-cal-month {
+  margin: 0;
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: var(--t-display-letter);
+  color: var(--ink);
+}
+.adm-cal-count {
+  margin: 5px 0 0;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.adm-cal-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  min-height: 48px;
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+.adm-cal-step:hover { background: var(--bg-3); border-color: var(--ink-3); }
+/* Focus rings through this whole feature are bone, not red. Red already means
+   "this wants doing", and a red ring landing inside a red cell is both a muddled
+   signal and the weakest contrast pairing on the screen. */
+.adm-cal-step:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* Hairlines come from the grid gap showing the container through, so no cell
+   ever carries a double border. */
+.adm-cal-frame { border: 1px solid var(--line-2); }
+.adm-cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--line);
+}
+.adm-cal-dow {
+  background: var(--bg-2);
+  padding: 10px 2px;
+  text-align: center;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.adm-cal-cell {
+  background: var(--bg);
+  min-height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 2px 7px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+.adm-cal-cell.is-pad { background: var(--bg); }
+.adm-cal-cell:hover { background: var(--bg-3); }
+.adm-cal-cell:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+/* The box is reserved on every cell, so today filling it in cannot make its row
+   a pixel taller than the rest of the month. */
+.adm-cal-date {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 17px;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.adm-cal-in {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: var(--t-display-letter);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.adm-cal-time {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  line-height: 1.15;
+  letter-spacing: 0;
+  color: var(--ink-2);
+  text-align: center;
+}
+.adm-cal-more {
+  font-family: var(--f-mono);
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.adm-cal-cell.is-done  { background: var(--bg-2); }
+.adm-cal-cell.is-ahead .adm-cal-date { color: var(--ink-2); }
+.adm-cal-cell.is-todo {
+  background: color-mix(in oklab, var(--red) 22%, var(--bg));
+}
+.adm-cal-cell.is-todo .adm-cal-date,
+.adm-cal-cell.is-todo .adm-cal-time { color: var(--ink); }
+.adm-cal-cell.is-todo .adm-cal-more { color: var(--ink-2); }
+.adm-cal-cell.is-todo:hover { background: color-mix(in oklab, var(--red) 32%, var(--bg)); }
+/* Today is the date itself, filled in. It reads the same on every state of cell,
+   it does not compete with the red, and it leaves the ring free for focus. */
+.adm-cal-cell.is-today .adm-cal-date {
+  background: var(--ink);
+  color: var(--bg);
+  font-weight: 500;
+}
+
+.adm-cal-legend {
+  margin: 12px 0 32px;
+  font-size: 13px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+/* Today, straight under the grid: the one thing he came here to do, inside
+   thumb reach rather than at the top of the screen. */
+.adm-now {
+  border: 1px solid var(--line-2);
+  background: var(--bg-2);
+  padding: 20px 24px;
+  margin-bottom: 40px;
+}
+.adm-now-when {
+  margin: 0 0 10px;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.adm-now-line { margin: 0; font-size: 16px; color: var(--ink-2); line-height: 1.5; }
+.adm-now-line b { color: var(--ink); font-weight: 600; }
+.adm-now-btn { margin-top: 14px; }
+.adm-now-class + .adm-now-class {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- One day ------------------------------------------------------ */
+.adm-day-list { display: flex; flex-direction: column; }
+.adm-day-row {
+  display: grid;
+  grid-template-columns: 84px 1fr auto;
+  gap: 6px 20px;
+  align-items: center;
+  min-height: 76px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+.adm-day-row:last-of-type { border-bottom: 0; }
+.adm-day-row:hover { background: var(--bg-3); }
+.adm-day-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.adm-day-time {
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: var(--t-display-letter);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.adm-day-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.adm-day-state { font-size: 16px; color: var(--ink-2); line-height: 1.4; }
+.adm-day-state b { color: var(--ink); font-weight: 600; }
+.adm-day-when {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+.adm-day-go {
   font-family: var(--f-mono);
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-3);
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
+  white-space: nowrap;
 }
-.adm-tally b { color: var(--ink); font-weight: 500; }
+.adm-day-row.is-todo { background: color-mix(in oklab, var(--red) 14%, var(--bg)); }
+.adm-day-row.is-todo:hover { background: color-mix(in oklab, var(--red) 22%, var(--bg)); }
+.adm-day-row.is-todo .adm-day-state { color: var(--ink); }
+.adm-day-row.is-todo .adm-day-go { color: var(--ink-2); }
+
+/* Adding a one-off. Folded away rather than thrown into a dialog, so the day it
+   belongs to stays on screen behind it. */
+.adm-add { border-top: 1px solid var(--line-2); }
+.adm-add > summary {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+  transition: background 0.15s;
+}
+.adm-add > summary::-webkit-details-marker { display: none; }
+.adm-add > summary::before {
+  content: "+";
+  font-family: var(--f-mono);
+  font-size: 17px;
+  color: var(--ink-3);
+  margin-right: 12px;
+}
+.adm-add[open] > summary::before { content: "\2212"; }
+.adm-add > summary:hover { background: var(--bg-2); }
+.adm-add > summary:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.adm-add-b { padding: 4px 24px 24px; border-top: 1px solid var(--line); }
+.adm-add-b .trial-form { max-width: 480px; }
 
 /* ---------- Empty states ------------------------------------------------- */
 .adm-empty {
@@ -646,7 +943,47 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   .adm-seg label { flex: 1 1 0; min-width: 0; padding: 0 4px; letter-spacing: 0.06em; }
   .adm-panel-b { padding: 18px 16px; }
   .adm-reg-group { padding: 16px 16px 0; }
-  .adm-reg-bar { padding: 14px 16px; }
   .adm-card-val { font-size: 34px; }
   .adm-swipe { display: block; }
+
+  /* The grid is the content, so it gets the whole screen. Seven columns inside
+     the page gutter give 50px cells; edge to edge gives 55px, which is the
+     difference between a comfortable target and a fiddly one. */
+  .adm-cal-frame {
+    margin-left: calc(var(--gutter) * -1);
+    margin-right: calc(var(--gutter) * -1);
+    border-left: 0;
+    border-right: 0;
+  }
+  .adm-cal-month { font-size: 26px; }
+  .adm-cal-cell { min-height: 64px; padding: 7px 1px 6px; }
+  .adm-cal-legend { margin-bottom: 24px; }
+  .adm-now { padding: 18px 16px; }
+  .adm-now-btn { width: 100%; }
+
+  .adm-day-row { grid-template-columns: 62px 1fr auto; gap: 4px 12px; padding: 14px 16px; }
+  .adm-day-time { font-size: 22px; }
+  .adm-add > summary { padding: 0 16px; }
+  .adm-add-b { padding: 4px 16px 20px; }
+
+  .adm-reg-top { padding: 14px 16px; }
+  .adm-reg-top .adm-btn { width: 100%; }
+  /* Count on one line, Save across the full width underneath it. The Save is the
+     only thing in this bar that must never be mis-tapped. */
+  .adm-reg-bar { padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
+  .adm-reg-tally { width: 100%; justify-content: space-between; }
+  .adm-btn-save { width: 100%; }
+}
+
+/* Nothing here is choreography — every transition is state feedback — but a
+   person who has asked for less movement gets none of it. */
+@media (prefers-reduced-motion: reduce) {
+  .adm *,
+  .adm *::before,
+  .adm *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

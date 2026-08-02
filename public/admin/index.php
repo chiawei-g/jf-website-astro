@@ -24,19 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $students   = jfsd_read('students');
 $payments   = jfsd_read('payments');
 $attendance = jfsd_read('attendance');
+$sessions   = jfsd_read('sessions');
 
-$today      = jfsd_today();
-$roster     = jfsd_active_students($students);
-$attention  = jfsd_needs_attention($students);
-$slotsToday = jfsd_slots_on_date($today);
-
-// Registers already saved for today, per slot.
-$todayMarks = [];
-foreach ($attendance as $row) {
-    if (($row['date'] ?? '') === $today) {
-        $todayMarks[(string) ($row['slot'] ?? '')][(string) ($row['student_id'] ?? '')] = (string) ($row['status'] ?? '');
-    }
-}
+$today       = jfsd_today();
+$roster      = jfsd_active_students($students);
+$attention   = jfsd_needs_attention($students);
+$classCounts = jfsd_register_counts($attendance);
+$classesToday = jfsd_classes_on_date($sessions, $today);
 
 // This calendar month's takings, studio time. Voided rows and balance
 // corrections are not money and must never appear in this figure.
@@ -59,11 +53,13 @@ foreach (jfsd_live_payments($payments) as $p) {
    student. */
 $drift = jfsd_reconcile($students, $payments, $attendance);
 
-// Attendance across the last 7 days, as a simple health signal.
-$weekAgo   = date('Y-m-d', (int) strtotime($today . ' -6 days'));
-$weekPresent = 0;
+/* Attendance across the last 7 days, as a simple health signal. A mark carries
+   no date of its own — the class record owns that — so this joins through it. */
+$weekAgo      = date('Y-m-d', (int) strtotime($today . ' -6 days'));
+$sessionDates = jfsd_session_dates($sessions);
+$weekPresent  = 0;
 foreach ($attendance as $row) {
-    $d = (string) ($row['date'] ?? '');
+    $d = $sessionDates[(string) ($row['session_id'] ?? '')] ?? '';
     if ($d >= $weekAgo && $d <= $today && in_array($row['status'] ?? '', ['present', 'late'], true)) {
         $weekPresent++;
     }
@@ -76,17 +72,19 @@ jfsd_page_title('Today', 'Dashboard');
 <?php if (!$students): ?>
 
 <!-- ============ FIRST RUN ============ -->
+<?php /* No button here on purpose. People are put on the roster by another
+         route, and the owner does not want that door opened from the dashboard. */ ?>
 <div class="adm-panel">
   <div class="adm-panel-h">
-    <h2 class="adm-panel-title">Nothing set up yet</h2>
+    <h2 class="adm-panel-title">Nothing here yet</h2>
   </div>
   <div class="adm-panel-b">
-    <p class="adm-today-line">Start by adding the people who come to class.</p>
-    <p class="adm-hint adm-mb">
-      Once they are on the roster you can take a register and record payments, and this page
-      starts telling you who has run out of sessions and needs chasing.
+    <p class="adm-today-line">Nobody is on the roster, so there is nothing to show.</p>
+    <p class="adm-hint">
+      Once people are on it, this page tells you who is coming, whether the register has
+      been taken, and who has run out of sessions and needs chasing. The calendar under
+      Attendance already knows the usual class times.
     </p>
-    <a class="adm-btn adm-btn-red adm-btn-wide" href="/admin/students.php?new=1">Add your first student</a>
   </div>
 </div>
 
@@ -128,44 +126,46 @@ jfsd_page_title('Today', 'Dashboard');
     <h2 class="adm-panel-title">Today &middot; <?= jfsd_e(jfsd_date_friendly($today)) ?></h2>
     <p class="adm-panel-note">Times are Singapore time.</p>
   </div>
-  <div class="adm-panel-b<?= $slotsToday ? ' is-flush' : '' ?>">
-    <?php if (!$slotsToday): ?>
+  <div class="adm-panel-b<?= $classesToday ? ' is-flush' : '' ?>">
+    <?php if (!$classesToday): ?>
       <div class="adm-empty">
         <strong>No class today.</strong>
-        The studio runs Monday and Wednesday evenings, and Saturday and Sunday mornings.
+        Classes normally run on Monday and Wednesday evenings, and Saturday and Sunday
+        mornings. <a href="/admin/attendance.php">Open the calendar</a> to see the week.
       </div>
     <?php else: ?>
-      <?php foreach ($slotsToday as $key => $slot):
-          $marks   = $todayMarks[$key] ?? [];
-          $present = 0;
-          foreach ($marks as $status) {
-              if (in_array($status, ['present', 'late'], true)) {
-                  $present++;
-              }
-          }
+      <?php foreach ($classesToday as $c):
+          $cid    = (string) $c['id'];
+          $marked = ($c['stored'] && isset($classCounts[$cid])) ? (int) $classCounts[$cid]['marked'] : 0;
+          $inRoom = $marked > 0 ? (int) $classCounts[$cid]['in'] : 0;
+          $href   = '/admin/attendance.php?date=' . rawurlencode($today)
+              . ($c['stored'] ? '&amp;class=' . rawurlencode($cid) : '&amp;at=' . rawurlencode((string) $c['start']));
           ?>
         <div class="adm-today">
           <div class="adm-today-when">
-            <span class="adm-today-time"><?= jfsd_e($slot['start']) ?>–<?= jfsd_e($slot['end']) ?></span>
-            <span class="adm-today-tag"><?= jfsd_e($slot['tag']) ?></span>
+            <span class="adm-today-time"><?= jfsd_e(jfsd_time_short((string) $c['start'])) ?></span>
+            <span class="adm-today-range"><?= jfsd_e(jfsd_time_range((string) $c['start'], (string) $c['end'])) ?></span>
           </div>
           <div class="adm-today-body">
             <p class="adm-today-line">
-              <?php if ($marks): ?>
-                Register taken — <b><?= (int) $present ?></b> in class,
-                <?= count($marks) ?> of <?= count($roster) ?> marked.
+              <?php if ($marked > 0): ?>
+                Register taken. <b><?= (int) $inRoom ?></b> in class,
+                <?= (int) $marked ?> of <?= count($roster) ?> marked.
               <?php else: ?>
                 Register not taken yet. <b><?= count($roster) ?></b> active student<?= count($roster) === 1 ? '' : 's' ?> expected.
               <?php endif; ?>
             </p>
             <p class="adm-hint">
-              There is no per-class booking — everyone on the active roster is listed on the register,
-              and you mark who actually turned up.
+              <?php if ((string) $c['label'] !== ''): ?>
+                <?= jfsd_e((string) $c['label']) ?>.
+              <?php endif; ?>
+              Everyone on the active roster is listed on the register, and you mark who
+              actually turned up.
             </p>
           </div>
           <div class="adm-today-cta">
-            <a class="adm-btn adm-btn-red" href="/admin/attendance.php?date=<?= rawurlencode($today) ?>&amp;slot=<?= rawurlencode((string) $key) ?>">
-              <?= $marks ? 'Open register' : 'Take register' ?>
+            <a class="adm-btn adm-btn-red" href="<?= $href ?>">
+              <?= $marked > 0 ? 'Open register' : 'Take register' ?>
             </a>
           </div>
         </div>

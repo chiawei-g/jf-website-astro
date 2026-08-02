@@ -4,33 +4,50 @@ declare(strict_types=1);
 // JF Self Defense admin — domain constants and the flock-guarded JSON store.
 // INCLUDE ONLY. Never request this file over HTTP.
 
-// A GA4 snapshot older than this is treated as absent rather than shown as
-// current. Two sibling sites in this portfolio ran on a frozen snapshot for
-// three weeks without anyone noticing, because a stale number looks exactly
-// like a fresh one.
-const JFSD_GA_STALE_DAYS = 3;
 if (!defined('JFSD_ADMIN')) {
     http_response_code(404);
     exit;
 }
 
+// A GA4 snapshot older than this is treated as absent rather than shown as
+// current. Two sibling sites in this portfolio ran on a frozen snapshot for
+// three weeks without anyone noticing, because a stale number looks exactly
+// like a fresh one.
+const JFSD_GA_STALE_DAYS = 3;
+
 /* ===========================================================================
- * THE WEEKLY SCHEDULE — SINGLE SOURCE OF TRUTH
+ * THE WEEKLY PATTERN — A SUGGESTION, NEVER AN IDENTITY
  * ---------------------------------------------------------------------------
- * The studio runs four fixed slots a week. These were previously restated in
- * six different places across the public site; this admin defines them once and
- * every screen reads from here. If a slot ever changes, change it HERE.
+ * The studio normally runs four classes a week. This constant exists so the
+ * calendar can show what OUGHT to be on a date nobody has touched yet. That is
+ * ALL it does.
  *
- * 'key' matches the radio values already used on /programmes (mon|wed|sat|sun)
- * so attendance records stay comparable with anything the public site records.
+ * The moment a register is saved, a real class record is written into
+ * sessions.json carrying that day's actual start and end, and every screen
+ * reads the record from then on. So editing the times below changes what is
+ * suggested from today forward, and cannot reach back and re-time a register
+ * that has already been taken. That is the entire point of the split: if
+ * Wednesday ever moves from 7pm to 8pm, every past Wednesday must keep saying
+ * 7pm, because 7pm is when those people were actually in the room.
+ *
+ * There is no marketing tag here on purpose. Which group a class is aimed at is
+ * a public-site concern; internally people just turn up.
+ *
  * 'dow' is PHP's date('N'): Monday = 1 ... Sunday = 7.
  * ========================================================================= */
-const JFSD_SLOTS = [
-    'mon' => ['key' => 'mon', 'dow' => 1, 'day' => 'Monday',    'start' => '19:00', 'end' => '20:00', 'label' => 'Monday 7-8pm',        'tag' => 'All adults'],
-    'wed' => ['key' => 'wed', 'dow' => 3, 'day' => 'Wednesday', 'start' => '19:00', 'end' => '20:00', 'label' => 'Wednesday 7-8pm',     'tag' => "Women's night"],
-    'sat' => ['key' => 'sat', 'dow' => 6, 'day' => 'Saturday',  'start' => '09:00', 'end' => '10:00', 'label' => 'Saturday 9-10am',     'tag' => 'All adults'],
-    'sun' => ['key' => 'sun', 'dow' => 7, 'day' => 'Sunday',    'start' => '09:30', 'end' => '10:30', 'label' => 'Sunday 9.30-10.30am', 'tag' => 'Family'],
+const JFSD_TEMPLATE = [
+    ['dow' => 1, 'day' => 'Monday',    'start' => '19:00', 'end' => '20:00'],
+    ['dow' => 3, 'day' => 'Wednesday', 'start' => '19:00', 'end' => '20:00'],
+    ['dow' => 6, 'day' => 'Saturday',  'start' => '09:00', 'end' => '10:00'],
+    ['dow' => 7, 'day' => 'Sunday',    'start' => '09:30', 'end' => '10:30'],
 ];
+
+/**
+ * How a stored class came to exist.
+ *   template — the weekly pattern suggested it and a register was saved on it
+ *   adhoc    — somebody put it on the calendar by hand for that date only
+ */
+const JFSD_SESSION_SOURCES = ['template', 'adhoc'];
 
 /** Membership plans. 'sessions' is the usual number of classes a purchase buys. */
 const JFSD_PLANS = [
@@ -63,8 +80,8 @@ const JFSD_PAYMENT_METHODS = [
     'cash'          => 'Cash',
 ];
 
-/** The three JSON files. Nothing outside this list can be read or written. */
-const JFSD_FILES = ['students', 'attendance', 'payments'];
+/** The four JSON files. Nothing outside this list can be read or written. */
+const JFSD_FILES = ['students', 'attendance', 'payments', 'sessions'];
 
 /**
  * Pseudo-mark meaning "take this row off the register entirely".
@@ -124,7 +141,7 @@ function jfsd_store_state(string $key, ?string $set = null): string
 }
 
 /**
- * Make sure the data directory exists and the three JSON files are seeded.
+ * Make sure the data directory exists and the four JSON files are seeded.
  * Runs once per request. NEVER throws — a missing directory must degrade to a
  * readable on-screen notice, not a white page.
  *
@@ -179,7 +196,7 @@ function jfsd_store_check(): void
         return;
     }
 
-    // Seed the three files on first use so every later read is a plain array.
+    // Seed the four files on first use so every later read is a plain array.
     foreach (JFSD_FILES as $name) {
         $path = jfsd_path($name);
         if ($path !== '' && !is_file($path)) {
@@ -511,23 +528,180 @@ function jfsd_id(string $prefix): string
  * Lookups
  * ========================================================================= */
 
-function jfsd_slot(string $key): ?array
-{
-    return JFSD_SLOTS[$key] ?? null;
-}
-
-/** The slots that fall on a given ISO date (usually one, sometimes none). */
-function jfsd_slots_on_date(string $ymd): array
+/** PHP's date('N') for an ISO date: Monday = 1 ... Sunday = 7. 0 if unparseable. */
+function jfsd_dow(string $ymd): int
 {
     $ts = strtotime($ymd . ' 12:00:00');
-    if ($ts === false) {
-        return [];
-    }
-    $dow = (int) date('N', $ts);
+    return $ts === false ? 0 : (int) date('N', $ts);
+}
+
+/** What the weekly pattern suggests for one date. Usually one, sometimes none. */
+function jfsd_template_on_date(string $ymd): array
+{
+    $dow = jfsd_dow($ymd);
     $out = [];
-    foreach (JFSD_SLOTS as $key => $slot) {
-        if ($slot['dow'] === $dow) {
-            $out[$key] = $slot;
+    foreach (JFSD_TEMPLATE as $entry) {
+        if ((int) $entry['dow'] === $dow) {
+            $out[] = $entry;
+        }
+    }
+    usort($out, static fn(array $a, array $b): int => strcmp((string) $a['start'], (string) $b['start']));
+    return $out;
+}
+
+/** Stored class records for one date, earliest first. */
+function jfsd_sessions_on_date(array $sessions, string $ymd): array
+{
+    $out = [];
+    foreach ($sessions as $s) {
+        if ((string) ($s['date'] ?? '') === $ymd) {
+            $out[] = $s;
+        }
+    }
+    usort($out, static fn(array $a, array $b): int =>
+        [(string) ($a['start'] ?? ''), (string) ($a['id'] ?? '')]
+        <=> [(string) ($b['start'] ?? ''), (string) ($b['id'] ?? '')]);
+    return $out;
+}
+
+function jfsd_find_session(array $sessions, string $id): ?array
+{
+    if ($id === '') {
+        return null;
+    }
+    foreach ($sessions as $s) {
+        if ((string) ($s['id'] ?? '') === $id) {
+            return $s;
+        }
+    }
+    return null;
+}
+
+/**
+ * Everything that belongs on the calendar for one date: the classes that have
+ * actually been stored, plus whatever the weekly pattern still suggests on top
+ * of them. Earliest first.
+ *
+ * Each entry is normalised so no screen has to care which kind it is:
+ *   id      the stored id, or '' when the pattern is only suggesting it
+ *   stored  true once there is a real record behind it
+ *
+ * Matching a suggestion to a stored class is deliberately two-pass:
+ *
+ *   1. same start time  — the ordinary case.
+ *   2. failing that, any leftover stored class that itself came from the
+ *      pattern. This is what stops a time change putting a phantom class on
+ *      history: move Wednesday to 8pm and every past Wednesday already saved at
+ *      7pm would otherwise sprout a second, never-taken 8pm class.
+ */
+function jfsd_classes_on_date(array $sessions, string $ymd): array
+{
+    $stored  = jfsd_sessions_on_date($sessions, $ymd);
+    $pattern = jfsd_template_on_date($ymd);
+
+    $taken   = [];  // stored index => already answers a suggestion
+    $suggest = [];  // pattern index => still unanswered
+    foreach ($pattern as $i => $entry) {
+        $suggest[$i] = true;
+    }
+
+    foreach ($pattern as $i => $entry) {
+        foreach ($stored as $j => $s) {
+            if (isset($taken[$j]) || (string) ($s['start'] ?? '') !== (string) $entry['start']) {
+                continue;
+            }
+            $taken[$j] = true;
+            unset($suggest[$i]);
+            break;
+        }
+    }
+    foreach ($pattern as $i => $entry) {
+        if (!isset($suggest[$i])) {
+            continue;
+        }
+        foreach ($stored as $j => $s) {
+            if (isset($taken[$j]) || (string) ($s['source'] ?? '') !== 'template') {
+                continue;
+            }
+            $taken[$j] = true;
+            unset($suggest[$i]);
+            break;
+        }
+    }
+
+    $out = [];
+    foreach ($stored as $s) {
+        $out[] = [
+            'id'     => (string) ($s['id'] ?? ''),
+            'date'   => $ymd,
+            'start'  => (string) ($s['start'] ?? ''),
+            'end'    => (string) ($s['end'] ?? ''),
+            'label'  => (string) ($s['label'] ?? ''),
+            'source' => (string) ($s['source'] ?? 'adhoc'),
+            'stored' => true,
+        ];
+    }
+    foreach ($pattern as $i => $entry) {
+        if (!isset($suggest[$i])) {
+            continue;
+        }
+        $out[] = [
+            'id'     => '',
+            'date'   => $ymd,
+            'start'  => (string) $entry['start'],
+            'end'    => (string) $entry['end'],
+            'label'  => '',
+            'source' => 'template',
+            'stored' => false,
+        ];
+    }
+    usort($out, static fn(array $a, array $b): int =>
+        [$a['start'], $a['id']] <=> [$b['start'], $b['id']]);
+    return $out;
+}
+
+/**
+ * How many marks each stored class carries, and how many of those were people
+ * actually in the room. A class with no marks at all is a register nobody has
+ * taken yet, which is what the calendar paints red.
+ *
+ * @return array<string,array{marked:int,in:int}>
+ */
+function jfsd_register_counts(array $attendance): array
+{
+    $out = [];
+    foreach ($attendance as $row) {
+        $sid = (string) ($row['session_id'] ?? '');
+        if ($sid === '') {
+            continue;
+        }
+        if (!isset($out[$sid])) {
+            $out[$sid] = ['marked' => 0, 'in' => 0];
+        }
+        $out[$sid]['marked']++;
+        if (in_array((string) ($row['status'] ?? ''), ['present', 'late'], true)) {
+            $out[$sid]['in']++;
+        }
+    }
+    return $out;
+}
+
+/**
+ * class id => the date it ran on.
+ *
+ * Attendance rows carry no date of their own on purpose: the class record owns
+ * the date, so there is exactly one place a date can be read from and nothing
+ * to drift. Anything that wants to count marks per day joins through this.
+ *
+ * @return array<string,string>
+ */
+function jfsd_session_dates(array $sessions): array
+{
+    $out = [];
+    foreach ($sessions as $s) {
+        $id = (string) ($s['id'] ?? '');
+        if ($id !== '') {
+            $out[$id] = (string) ($s['date'] ?? '');
         }
     }
     return $out;
@@ -733,16 +907,76 @@ function jfsd_reconcile(array $students, array $payments, array $attendance): ar
  * ========================================================================= */
 
 /**
- * Save one class register. Idempotent by (date, slot, student_id): re-saving
- * the same marks changes nothing. A record carries its own 'counted' flag, so
- * flipping present -> absent gives the session back and flipping it again does
- * not take a second one.
+ * Put an extra class on the calendar for one date: a time the venue forced, or a
+ * one-off somebody asked for. Unlike a class the weekly pattern suggests, this
+ * one is a real record from the moment it is added, before any register exists.
+ */
+function jfsd_add_session(string $date, string $start, string $end, string $label, string $user): array
+{
+    if (!jfsd_valid_date($date)) {
+        return ['ok' => false, 'msg' => 'That is not a real date, so nothing was added.'];
+    }
+    if (!jfsd_valid_time($start) || !jfsd_valid_time($end)) {
+        return ['ok' => false, 'msg' => 'Please give both a start time and a finish time. Nothing was added.'];
+    }
+    if ($end <= $start) {
+        return ['ok' => false, 'msg' => 'The finish time has to be later than the start time. Nothing was added.'];
+    }
+
+    $result = jfsd_transaction(static function () use ($date, $start, $end, $label, $user): array {
+        $sessions = jfsd_read('sessions');
+        foreach (jfsd_sessions_on_date($sessions, $date) as $s) {
+            if ((string) ($s['start'] ?? '') === $start) {
+                return [
+                    'ok'  => false,
+                    'msg' => 'There is already a class at that time on that day, so nothing was added.',
+                ];
+            }
+        }
+        $sessions[] = [
+            'id'         => jfsd_id('ses'),
+            'date'       => $date,
+            'start'      => $start,
+            'end'        => $end,
+            'label'      => $label,
+            'source'     => 'adhoc',
+            'created_at' => jfsd_now_iso(),
+            'created_by' => $user,
+        ];
+        if (!jfsd_write('sessions', $sessions)) {
+            return ['ok' => false, 'msg' => 'Nothing was saved, so please try again. The class was not added.'];
+        }
+        return [
+            'ok'  => true,
+            'msg' => 'Added a class at ' . jfsd_time_friendly($start) . ' on ' . jfsd_date_friendly($date) . '.',
+        ];
+    });
+
+    if (!is_array($result)) {
+        return ['ok' => false, 'msg' => 'The data files are busy or unavailable. Nothing was saved, so please try again.'];
+    }
+    return $result;
+}
+
+/**
+ * Save one class register. Idempotent by (session_id, student_id): re-saving the
+ * same marks changes nothing. A row carries its own 'counted' flag, so flipping
+ * present -> absent gives the session back and flipping it again does not take a
+ * second one.
+ *
+ * $sessionId identifies a class that already has a record. When it is empty the
+ * class is one the weekly pattern only suggests, being saved for the very first
+ * time: $date + $start identify which suggestion, the times are read from the
+ * pattern AS IT STANDS NOW, and a real record is written in the same commit as
+ * the marks. From that moment the record is the truth, and a later edit to the
+ * pattern cannot re-time this register.
  *
  * @param array<string,string> $marks student_id => status
  */
-function jfsd_save_attendance(string $date, string $slotKey, array $marks, string $user): array
+function jfsd_save_attendance(string $sessionId, string $date, string $start, array $marks, string $user): array
 {
-    $result = jfsd_transaction(static function () use ($date, $slotKey, $marks, $user): array {
+    $result = jfsd_transaction(static function () use ($sessionId, $date, $start, $marks, $user): array {
+        $sessions   = jfsd_read('sessions');
         $attendance = jfsd_read('attendance');
         $students   = jfsd_read('students');
         $byId       = jfsd_index_students($students);
@@ -751,16 +985,55 @@ function jfsd_save_attendance(string $date, string $slotKey, array $marks, strin
         $deducted   = 0;
         $restored   = 0;
         $dupRemoved = 0;
+        $newSession = null;
+
+        if ($sessionId === '') {
+            $entry = null;
+            foreach (jfsd_template_on_date($date) as $e) {
+                if ((string) $e['start'] === $start) {
+                    $entry = $e;
+                    break;
+                }
+            }
+            if ($entry === null) {
+                return ['ok' => false, 'msg' => 'That class is not on the calendar, so nothing was saved.'];
+            }
+            // Two phones, one class: the other one may have written the record
+            // seconds ago. Re-use it rather than creating a second class at the
+            // same time, which would split the register in half.
+            foreach (jfsd_sessions_on_date($sessions, $date) as $s) {
+                if ((string) ($s['start'] ?? '') === $start) {
+                    $sessionId = (string) ($s['id'] ?? '');
+                    break;
+                }
+            }
+            if ($sessionId === '') {
+                $newSession = [
+                    'id'         => jfsd_id('ses'),
+                    'date'       => $date,
+                    'start'      => (string) $entry['start'],
+                    'end'        => (string) $entry['end'],
+                    'label'      => '',
+                    'source'     => 'template',
+                    'created_at' => $now,
+                    'created_by' => $user,
+                ];
+                $sessions[] = $newSession;
+                $sessionId  = (string) $newSession['id'];
+            }
+        } elseif (jfsd_find_session($sessions, $sessionId) === null) {
+            return ['ok' => false, 'msg' => 'That class is not on the calendar, so nothing was saved.'];
+        }
 
         // Index this class's rows by student, collapsing any duplicates on
-        // (date, slot, student_id) as we go. Keeping only the first means the
+        // (session_id, student_id) as we go. Keeping only the first means the
         // 'counted' flag we later flip is the only one that exists; a duplicate
         // that had already charged a session gives it back on the way out, so
         // the ledger identity survives the cleanup.
         $kept     = [];
         $existing = [];
         foreach ($attendance as $row) {
-            if (($row['date'] ?? '') !== $date || ($row['slot'] ?? '') !== $slotKey) {
+            if ((string) ($row['session_id'] ?? '') !== $sessionId) {
                 $kept[] = $row;
                 continue;
             }
@@ -799,8 +1072,7 @@ function jfsd_save_attendance(string $date, string $slotKey, array $marks, strin
                 $wasCounted   = false;
                 $attendance[] = [
                     'id'         => jfsd_id('att'),
-                    'date'       => $date,
-                    'slot'       => $slotKey,
+                    'session_id' => $sessionId,
                     'student_id' => $studentId,
                     'status'     => $status,
                     'counted'    => $shouldCount,
@@ -832,10 +1104,21 @@ function jfsd_save_attendance(string $date, string $slotKey, array $marks, strin
         // to leave every row stamped counted:true with no session deducted — a
         // state no amount of re-saving could repair, because the counted flag
         // made the delta a permanent no-op.
-        if (!jfsd_write_all(['attendance' => $attendance, 'students' => $updatedStudents])) {
+        //
+        // sessions.json goes FIRST in the set for the same reason at one remove:
+        // a class record with no marks against it yet is harmless and re-savable,
+        // while marks pointing at a class that was never written are orphans.
+        $sets = [];
+        if ($newSession !== null) {
+            $sets['sessions'] = $sessions;
+        }
+        $sets['attendance'] = $attendance;
+        $sets['students']   = $updatedStudents;
+
+        if (!jfsd_write_all($sets)) {
             return [
                 'ok'  => false,
-                'msg' => 'Nothing was saved — please try again. The register and the session balances '
+                'msg' => 'Nothing was saved, so please try again. The register and the session balances '
                     . 'are both exactly as they were.',
             ];
         }
@@ -850,7 +1133,7 @@ function jfsd_save_attendance(string $date, string $slotKey, array $marks, strin
     });
 
     if (!is_array($result)) {
-        return ['ok' => false, 'msg' => 'The data files are busy or unavailable. Nothing was saved — please try again.'];
+        return ['ok' => false, 'msg' => 'The data files are busy or unavailable. Nothing was saved, so please try again.'];
     }
     return $result;
 }

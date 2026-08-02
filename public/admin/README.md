@@ -88,7 +88,8 @@ Then open `/admin/` in a browser. On first load the admin creates and seeds:
 ```
 private/
 ├── students.json      the roster
-├── attendance.json    one row per (date, class, student)
+├── sessions.json      one row per class that has actually happened
+├── attendance.json    one row per (class, student)
 ├── payments.json      one row per payment received
 ├── .sessions/         login sessions
 ├── .rate-limit/       failed-login counters
@@ -157,9 +158,15 @@ remove the `adm-demo` class and the `adm-demo-note` paragraphs, and delete the
 
 **Before class** — dashboard tells you who has run out. Chase them.
 
-**At class** — Attendance → the date defaults to today and the right class is
-pre-selected. Tap each name. "Mark all present" then correct the few who are not.
-Save. Anyone marked present or late loses one session automatically.
+**At class** — Attendance opens on a month calendar. Red means a register still
+needs taking; a number means that day is done and is how many were in class. Today's
+classes also sit under the grid with a button straight to the register. Tap each
+name, or "Mark everyone present" and correct the few who were not. Save. Anyone
+marked present or late loses one session automatically.
+
+**The venue moved a class, or somebody wants a one-off** — open the day, then
+"Add a class at another time". Start, finish, optional note. It affects that day
+only, and a day can carry as many classes as it needs to.
 
 **When money arrives** — Payments → pick the student, type the amount, pick what it
 covers. Leave "sessions to add" blank and the usual number for that plan is used
@@ -184,7 +191,7 @@ token. Half-marking a register and then navigating away asks first.
 |---|---|
 | `index.php` | Dashboard. Today's classes, needs-attention list, stub analytics panes. |
 | `students.php` | Roster: list, search, add, edit, soft-delete. |
-| `attendance.php` | Per-class register. |
+| `attendance.php` | Month calendar, one day, and the register. Three screens, one file. |
 | `payments.php` | Needs-attention list, record a payment, payment history. |
 | `login.php` | Sign-in form, bcrypt verify, rate limiting. |
 | `logout.php` | Clears the session. |
@@ -224,19 +231,37 @@ thousands separator are added at display time only.
 | `status` | `active` · `paused` · `left` |
 | `created_at`, `updated_at` | ISO 8601. |
 
+**`sessions.json`** — one row per class that actually happened.
+
+| Field | Notes |
+|---|---|
+| `id` | `ses_` + 14 hex. |
+| `date` | ISO date. |
+| `start`, `end` | `HH:MM`, 24h, Asia/Singapore. **Frozen at the moment the record is written.** |
+| `label` | Free text, usually empty. Shown as-is: "Makeup class", "Moved by the venue". |
+| `source` | `template` (the weekly pattern suggested it) · `adhoc` (put on the calendar by hand) |
+| `created_at`, `created_by` | |
+
+A record appears in two ways. An **adhoc** class exists the moment it is added. A
+**template** class is written the first time a register is saved on it — see "The
+class schedule" below.
+
 **`attendance.json`** — one row per student per class.
 
 | Field | Notes |
 |---|---|
 | `id` | `att_` + 14 hex. |
-| `date` | ISO date. |
-| `slot` | `mon` · `wed` · `sat` · `sun` |
+| `session_id` | The class this mark belongs to. |
 | `student_id` | |
 | `status` | `present` · `late` · `absent` · `excused` |
 | `counted` | **Whether this row has already deducted a session.** This is what makes saving idempotent. |
 | `marked_at`, `marked_by` | |
 
-`(date, slot, student_id)` is the natural key. Re-saving updates the existing row.
+`(session_id, student_id)` is the natural key. Re-saving updates the existing row.
+
+**A mark carries no date of its own.** The class record owns the date, so there is
+exactly one place it can be read from and nothing that can drift out of step.
+Anything that counts marks per day joins through `jfsd_session_dates()`.
 
 **`payments.json`**
 
@@ -282,22 +307,36 @@ that turns out to be wrong, it is one condition in `jfsd_needs_attention()` in
 
 ### The class schedule
 
-Defined **once**, as `JFSD_SLOTS` in `_store.php`:
+`JFSD_TEMPLATE` in `_store.php` is the weekly pattern:
 
-| Key | When | Who |
-|---|---|---|
-| `mon` | Monday 19:00–20:00 | All adults |
-| `wed` | Wednesday 19:00–20:00 | Women's night |
-| `sat` | Saturday 09:00–10:00 | All adults |
-| `sun` | Sunday 09:30–10:30 | Family |
+| When | Time |
+|---|---|
+| Monday | 19:00–20:00 |
+| Wednesday | 19:00–20:00 |
+| Saturday | 09:00–10:00 |
+| Sunday | 09:30–10:30 |
 
-The public site repeats these times in several places. **This admin does not add a
-seventh copy** — every screen here reads `JFSD_SLOTS`. If a class time changes,
-change it there and the whole admin follows. (The public Astro pages still need
-updating separately; that is outside this folder.)
+**It is a suggestion, not an identity.** All it does is let the calendar show what
+ought to be on a date nobody has touched yet. There is no group tag here on purpose —
+that is a public-site concern, and internally people just turn up.
 
-The keys match the radio values already used on `/programmes`, so records stay
-comparable if the public site ever posts a slot.
+A class becomes real in `sessions.json` at one of two moments:
+
+- **a register is saved on it** — the times are copied from the pattern *as it
+  stands at that instant* and frozen into the record;
+- **it is added by hand** from the day screen, for a time the venue moved or a
+  one-off somebody asked for.
+
+So editing the table above changes what is *suggested* from now on, and **cannot
+reach back and re-time a register that has already been taken.** That is the whole
+reason for the split: if Wednesday ever moves from 7pm to 8pm, every past Wednesday
+has to keep saying 7pm, because 7pm is when those people were actually in the room.
+`jfsd_classes_on_date()` matches a suggestion to a stored class by start time first,
+and failing that by `source: 'template'`, so a time change does not sprout a phantom
+never-taken class on every past date either.
+
+A date can carry any number of classes. The public Astro pages repeat these times
+and still need updating separately; that is outside this folder.
 
 ---
 
