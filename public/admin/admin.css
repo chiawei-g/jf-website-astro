@@ -410,6 +410,25 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
                                       looking at. Colour and glyph are
                                       independent, so the grid still reads with
                                       the red taken away. */
+/* The region the attendance page swaps in place of reloading.
+ *
+ * While a change is in flight the whole region dims slightly. That is the only
+ * signal it gets, deliberately: a spinner over a round trip that usually
+ * finishes in under 200ms is a flash of anxiety for nothing, and a skeleton
+ * would replace a correct calendar with a fake one. Dimming says "heard you,
+ * working" without taking anything away or claiming to know how long.
+ *
+ * The fade in is slower than the fade out, so a fast reply looks instant and a
+ * slow one still explains itself. */
+.adm-live { transition: opacity 140ms ease-out; }
+.adm-live.is-swapping {
+  opacity: 0.55;
+  transition: opacity 90ms ease-in 60ms; /* held back, so a quick reply never dims at all */
+}
+/* A dimmed region is mid-change; taking a second action against stale markup
+   is how you get a name added to yesterday. */
+.adm-live.is-swapping { pointer-events: none; }
+
 .adm-cal-nav {
   display: flex;
   align-items: center;

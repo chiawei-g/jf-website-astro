@@ -3,10 +3,19 @@ declare(strict_types=1);
 
 // JF Self Defense admin — the class calendar and who came.
 //
-// ONE page, and there is no second one. Tapping a date does a round trip to
-// this same file and comes back with that day written under the grid, with the
-// browser landed on it through the #day fragment. A day with no class behaves
-// exactly the same way: it says so at the bottom and offers to put one on.
+// ONE page, and there is no second one. Tapping a date writes that day under
+// the grid. A day with no class behaves exactly the same way: it says so at
+// the bottom and offers to put one on.
+//
+// AND IT DOES NOT RELOAD. ?live=1 returns just the region that changes —
+// rendered further down this same file, by this same code — so the browser
+// swaps that region in and the page never blinks or jumps. There is no second
+// template and no client-side copy of any of this; the server is still the
+// only thing that decides what a day looks like.
+//
+// The links and forms underneath are ordinary links and forms and still work
+// on their own. The swap is layered on top, and anything that goes wrong with
+// it falls back to letting the browser do what it was always going to do.
 //
 // Attendance is a LIST OF WHO TURNED UP, built by typing a name:
 //     on the list  =  came  =  one session off
@@ -27,6 +36,15 @@ admin_require_auth();
 
 $user  = admin_current_user() ?? '';
 $today = jfsd_today();
+
+/**
+ * Is this a request for just the region that changes, rather than the page?
+ *
+ * Set by the swap in the browser and by nothing else. It never appears in the
+ * address bar: the URL pushed into history is always the plain one, so the
+ * page can be reloaded, bookmarked or shared and behave normally.
+ */
+$live = ($_GET['live'] ?? $_POST['live'] ?? '') === '1';
 
 /**
  * How many days back a class with nobody on it still asks for attention.
@@ -128,6 +146,11 @@ function jfsd_day_spoken(string $ymd, array $sum, bool $isToday): string
  * screen is the confirmation, and a banner at the top of the page would be
  * out of sight below the fold anyway. A change that FAILED drops the fragment
  * so the page opens at the top, where the banner is.
+ *
+ * A live swap follows the redirect itself and asks for the region instead of
+ * the page. Both destinations are the same two, just wrapped differently: it
+ * never moved the page, so there is no top to send it back to, and it carries
+ * its own banner where he is already looking.
  * ------------------------------------------------------------------------- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     admin_require_csrf();
@@ -137,11 +160,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!jfsd_valid_date($postDate)) {
         jfsd_flash_set('error', 'That day could not be identified, so nothing was changed.');
-        jfsd_redirect('/admin/attendance.php');
+        jfsd_redirect('/admin/attendance.php' . ($live ? '?live=1' : ''));
     }
 
-    $top  = '/admin/attendance.php?date=' . rawurlencode($postDate);
-    $done = $top . '#day';
+    $tail = $live ? '&live=1' : '';
+    $top  = '/admin/attendance.php?date=' . rawurlencode($postDate) . $tail;
+    $done = $live ? $top : $top . '#day';
 
     /** @param array{ok:bool,msg:string} $result */
     $settle = static function (array $result, string $type = 'error') use ($top, $done): void {
@@ -264,9 +288,31 @@ for ($d = 1; $d <= $dayCount; $d++) {
 $day     = jfsd_day_summary($sessions, $counts, $date, $today, $floor, $windowFrom);
 $isToday = $date === $today;
 
-jfsd_head('Attendance', 'attendance');
-jfsd_page_title('Attendance', 'Who came');
+if (!$live) {
+    jfsd_head('Attendance', 'attendance');
+    jfsd_page_title('Attendance', 'Who came');
+}
 ?>
+
+<?php /* Everything a change can alter lives inside here, and this element is
+         itself never replaced — so the delegated handlers bound to it survive
+         every swap and nothing has to be rebound but the name fields. */ ?>
+<div class="adm-live" id="att-live">
+
+<?php
+/* On a full load the banner is printed by jfsd_head, at the top of the page.
+   A swap never redraws that far up, so the region carries its own — which is
+   the better place for it anyway: beside the thing he just tapped, rather
+   than above a calendar he has already scrolled past. */
+if ($live):
+    $flash = jfsd_flash_get();
+    if ($flash !== null):
+        $flashType = (string) ($flash['type'] ?? 'success');
+        $flashCls  = in_array($flashType, ['success', 'warn', 'error'], true) ? $flashType : 'success';
+        ?>
+  <div class="adm-alert adm-alert-<?= jfsd_e($flashCls) ?>"><?= jfsd_e((string) ($flash['msg'] ?? '')) ?></div>
+    <?php endif;
+endif; ?>
 
 <?php if (!$students): ?>
   <div class="adm-alert adm-alert-warn">
@@ -281,15 +327,18 @@ jfsd_page_title('Attendance', 'Who came');
 
 <!-- ============ THE MONTH ============ -->
 <div class="adm-cal-nav">
-  <a class="adm-cal-step" href="<?= jfsd_month_href($first->modify('-1 month')->format('Y-m'), $date) ?>"
+  <?php /* data-live marks a link the swap should handle. Anything without it
+           navigates the ordinary way, which is what Students and Payments in
+           the bar above need to keep doing. */ ?>
+  <a class="adm-cal-step" data-live href="<?= jfsd_month_href($first->modify('-1 month')->format('Y-m'), $date) ?>"
      aria-label="Previous month" title="Previous month">&lsaquo;</a>
-  <a class="adm-cal-step" href="<?= jfsd_month_href($first->modify('+1 month')->format('Y-m'), $date) ?>"
+  <a class="adm-cal-step" data-live href="<?= jfsd_month_href($first->modify('+1 month')->format('Y-m'), $date) ?>"
      aria-label="Next month" title="Next month">&rsaquo;</a>
   <div class="adm-cal-heading">
     <h2 class="adm-cal-month"><?= jfsd_e(jfsd_month_label($month)) ?></h2>
   </div>
   <?php if (!$isToday || $month !== substr($today, 0, 7)): ?>
-    <a class="adm-btn adm-btn-quiet" href="/admin/attendance.php">Today</a>
+    <a class="adm-btn adm-btn-quiet" data-live href="/admin/attendance.php">Today</a>
   <?php endif; ?>
   <?php /* Its own line under the month and the arrows, not squeezed beside
            them: the sentence is long enough to wrap, and wrapping it under a
@@ -342,7 +391,7 @@ jfsd_page_title('Attendance', 'Who came');
         }
         ?>
       <a class="adm-cal-cell <?= $state ?><?= $isNow ? ' is-today' : '' ?><?= $isSel ? ' is-picked' : '' ?>"
-         href="<?= jfsd_day_href($ymd) ?>"
+         data-live href="<?= jfsd_day_href($ymd) ?>"
          <?= $isSel ? 'aria-current="page"' : '' ?>
          aria-label="<?= jfsd_e(jfsd_day_spoken($ymd, $sum, $isNow)) ?>">
         <span class="adm-cal-date"><?= (int) $dayNum ?></span>
@@ -511,7 +560,17 @@ jfsd_page_title('Attendance', 'Who came');
           <?php elseif (!$addable): ?>
             <p class="adm-cls-none">Everybody is already on this list.</p>
           <?php else: ?>
-            <form class="adm-add" method="post" action="/admin/attendance.php" data-add>
+            <?php /* The START TIME rides on data-add so that after a swap the
+                     cursor can go back to the field it left, ready for the next
+                     name, instead of to the top of a rebuilt page.
+
+                     The time and not the class id, because a class that only
+                     exists in the template has no id until somebody is put on
+                     it — so keying on the id would lose the cursor on exactly
+                     the add that starts the day, which is the common one. The
+                     time is the same before and after it is stored. */ ?>
+            <form class="adm-add" method="post" action="/admin/attendance.php"
+                  data-add="<?= jfsd_e($start) ?>">
               <?= admin_csrf_field() ?>
               <input type="hidden" name="action" value="add">
               <input type="hidden" name="date" value="<?= jfsd_e($date) ?>">
@@ -593,15 +652,37 @@ jfsd_page_title('Attendance', 'Who came');
   </div>
 </section>
 
+</div><!-- /.adm-live -->
+
+<?php
+/* A swap asked for the region and has now had it. Everything past this point
+   is the page around it, which is already on screen and must not be sent
+   twice — least of all the script, whose listeners are still bound. */
+if ($live) {
+    return;
+}
+?>
+
 <script>
-/* Turns the plain name-picker into a type-and-tap field.
+/* One page that genuinely stays one page.
  *
- * The <select> stays in the page and stays the thing that gets submitted, so
- * there is exactly one list of who can be added and the no-scripting path is
- * the same form rather than a second implementation. With scripting off, the
- * picker and its Add button are simply what you get. */
+ * Tapping a date, stepping a month, adding somebody, taking them off — each of
+ * these asks the server for the region above and swaps it in, so the page does
+ * not blink, does not lose its place, and does not throw him back to the top.
+ *
+ * The server is still the only thing that decides what a day looks like. ?live=1
+ * returns the same markup, from the same PHP, and nothing here knows what a
+ * class or a balance is. There is no second copy to drift.
+ *
+ * Everything underneath is a real link and a real form. This is layered over
+ * them, and every failure path — no fetch, bad response, network gone, wrong
+ * markup back — hands control to the browser to do what it would have done
+ * anyway. The worst case is the page reloading, which is where we started. */
 (function () {
   'use strict';
+
+  var LIVE = document.getElementById('att-live');
+  if (!LIVE) { return; }
 
   var MAX_HITS = 8;
 
@@ -612,7 +693,15 @@ jfsd_page_title('Attendance', 'Who came');
     return el;
   }
 
-  document.querySelectorAll('[data-add]').forEach(function (form) {
+  /* =========================================================================
+   * THE TYPE-AND-TAP NAME FIELD
+   *
+   * The <select> stays in the page and stays the thing that gets submitted, so
+   * there is exactly one list of who can be added and the no-scripting path is
+   * the same form rather than a second implementation. With scripting off, the
+   * picker and its Add button are simply what you get.
+   * ====================================================================== */
+  function enhanceAdd(form) {
     var find  = form.querySelector('[data-add-find]');
     var input = form.querySelector('[data-add-in]');
     var pick  = form.querySelector('[data-add-pick]');
@@ -631,7 +720,7 @@ jfsd_page_title('Attendance', 'Who came');
     pick.hidden = true;
     sel.required = false;
 
-    var busy = false;
+    var sent = false;
 
     function matching(query) {
       var q = query.trim().toLowerCase();
@@ -646,8 +735,8 @@ jfsd_page_title('Attendance', 'Who came');
     }
 
     function choose(option) {
-      if (busy) { return; }
-      busy = true;
+      if (sent) { return; }
+      sent = true;
       var name = option.getAttribute('data-name') || 'that person';
       sel.value = option.value;
       input.value = name;
@@ -655,7 +744,11 @@ jfsd_page_title('Attendance', 'Who came');
       hits.hidden = true;
       state.hidden = false;
       state.textContent = 'Adding ' + name + '.';
-      form.submit();
+      /* Straight to send() rather than form.submit(): a scripted submit()
+         fires no submit event, so going through the DOM here would slip past
+         the delegated handler and reload the page — the exact thing this is
+         all for. send() falls back to a real submit if it cannot proceed. */
+      send(form);
     }
 
     function draw() {
@@ -713,17 +806,216 @@ jfsd_page_title('Attendance', 'Who came');
       var found = matching(input.value);
       if (found.length) { choose(found[0]); }
     });
+  }
+
+  /* Bind the parts of a freshly swapped region that need their own listeners.
+     The clicks and submits are delegated to LIVE, which is never replaced, so
+     this is only ever the name fields. */
+  function enhance(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('[data-add]'), enhanceAdd);
+  }
+
+  /* =========================================================================
+   * THE SWAP
+   * ====================================================================== */
+
+  /* Without all four, every link and form stays exactly as the server sent it
+     and the browser navigates. The name field still works — that part needs
+     nothing but the DOM — so this degrades to the page we had yesterday. */
+  var CAN_SWAP = !!(window.fetch && window.DOMParser && window.history && history.pushState);
+
+  var busy = false;
+
+  /** The address bar version of a URL: whatever we asked, minus our own flag. */
+  function plain(href) {
+    var u = new URL(href, location.href);
+    u.searchParams.delete('live');
+    u.hash = '';
+    return u.pathname + u.search;
+  }
+
+  /** The version we ask the server for. */
+  function region(href) {
+    var u = new URL(href, location.href);
+    u.searchParams.set('live', '1');
+    u.hash = '';
+    return u.href;
+  }
+
+  function start() {
+    busy = true;
+    LIVE.setAttribute('aria-busy', 'true');
+    LIVE.classList.add('is-swapping');
+  }
+
+  function stop() {
+    busy = false;
+    LIVE.removeAttribute('aria-busy');
+    LIVE.classList.remove('is-swapping');
+  }
+
+  /* Bring the day into view only when it is not already there.
+   *
+   * On his phone the calendar fills the screen and the day sits under it, so a
+   * tap that changed nothing visible would read as a tap that did nothing.
+   * On a laptop both are on screen at once and moving the page would be the
+   * rude thing to do. Hence: look first, and glide rather than jump. */
+  function reveal() {
+    var day = document.getElementById('day');
+    if (!day) { return; }
+    var box = day.getBoundingClientRect();
+    var vh  = window.innerHeight || document.documentElement.clientHeight;
+    if (box.top >= 0 && box.top <= vh * 0.7) { return; }
+    var slow = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    day.scrollIntoView({ behavior: slow ? 'auto' : 'smooth', block: 'start' });
+  }
+
+  /**
+   * Put the new region on screen.
+   * @param html   the response body — a full document containing our region
+   * @param url    what the address bar should say afterwards
+   * @param toTime start time of the class whose name field should get the
+   *               cursor back, if any
+   * @param mode   'push' for a day he chose, 'replace' for a change to the day
+   *               he is already on, 'none' when the browser has already moved
+   */
+  function paint(html, url, toTime, mode) {
+    var next = new DOMParser().parseFromString(html, 'text/html').getElementById('att-live');
+    if (!next) { throw new Error('no region in response'); }
+
+    LIVE.innerHTML = next.innerHTML;
+    enhance(LIVE);
+
+    /* Adding somebody is not a place he navigated to, so it replaces rather
+       than pushes. Otherwise four names added to a Sunday would be four Backs
+       that all look like nothing happening. */
+    if (mode === 'push') { history.pushState({ live: true }, '', url); }
+    else if (mode === 'replace') { history.replaceState({ live: true }, '', url); }
+
+    /* Back to the field he was typing in, so the second name is just typing.
+       Only when he was already there — never steal focus on a date tap, which
+       on a phone would open the keyboard over the list he asked to see. */
+    if (toTime) {
+      var key = window.CSS && CSS.escape ? CSS.escape(toTime) : toTime;
+      var back = LIVE.querySelector('[data-add="' + key + '"] [data-add-in]');
+      if (back && back.offsetParent !== null) {
+        try { back.focus({ preventScroll: true }); } catch (e) { back.focus(); }
+      }
+    }
+    reveal();
+  }
+
+  /** Follow a link without leaving the page. */
+  function go(href, mode) {
+    if (busy) { return; }
+    start();
+    fetch(region(href), { credentials: 'same-origin', headers: { 'X-Live': '1' } })
+      .then(function (res) {
+        if (!res.ok) { throw new Error('HTTP ' + res.status); }
+        return res.text();
+      })
+      .then(function (html) {
+        paint(html, plain(href), '', mode);
+        stop();
+      })
+      .catch(function () {
+        // Signed out, offline, or something we did not expect. Let the browser
+        // go there properly — it will land on the login page if that is why.
+        location.href = href;
+      });
+  }
+
+  /** Send a form without leaving the page. */
+  function send(form) {
+    if (!CAN_SWAP) { form.submit(); return; }
+    if (busy) { return; }
+    var data;
+    try {
+      data = new FormData(form);
+    } catch (e) {
+      form.submit();
+      return;
+    }
+    data.set('live', '1');
+    var toTime = form.getAttribute('data-add') || '';
+
+    /* getAttribute, NOT form.action.
+     *
+     * Every one of these forms carries <input name="action">, and a named
+     * control shadows the form property of the same name — so form.action
+     * hands back that input element, which stringifies into a URL like
+     * /admin/[object HTMLInputElement]. The attribute is the actual markup and
+     * cannot be shadowed. Same reasoning for method below. */
+    var action = form.getAttribute('action') || location.pathname;
+
+    start();
+    fetch(action, {
+      method: 'POST',
+      body: data,
+      credentials: 'same-origin',
+      headers: { 'X-Live': '1' }
+    })
+      .then(function (res) {
+        if (!res.ok) { throw new Error('HTTP ' + res.status); }
+        return res.text().then(function (html) { return { html: html, url: res.url }; });
+      })
+      .then(function (out) {
+        paint(out.html, plain(out.url), toTime, 'replace');
+        stop();
+      })
+      .catch(function () {
+        // The change may or may not have gone through, and guessing would be
+        // worse than showing him. A plain submit is safe: adding and removing
+        // are idempotent, and the class form is guarded by its own token.
+        stop();
+        form.submit();
+      });
+  }
+
+  /* ---- what gets intercepted ---------------------------------------------
+     Delegated to LIVE, which no swap ever replaces, so these are bound once
+     and go on working for markup that does not exist yet. */
+
+  LIVE.addEventListener('click', function (e) {
+    if (!CAN_SWAP) { return; }
+    // A modified click is a deliberate new tab. Leave it alone.
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) { return; }
+    var link = e.target.closest && e.target.closest('a[data-live]');
+    if (!link || !LIVE.contains(link)) { return; }
+    e.preventDefault();
+    go(link.href, 'push');
   });
 
-  /* Acknowledge every other tap in the panel within the same frame, so a slow
-     round trip on studio wifi does not look like nothing happened. Every one of
-     these actions is safe to repeat, so this is feedback, not a guard. */
-  document.querySelectorAll('.adm-day form').forEach(function (form) {
-    form.addEventListener('submit', function () {
-      var button = form.querySelector('button[type="submit"]');
-      if (button) { setTimeout(function () { button.disabled = true; }, 0); }
-    });
+  LIVE.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form || form.tagName !== 'FORM') { return; }
+    if ((form.getAttribute('method') || '').toLowerCase() !== 'post') { return; }
+
+    /* Acknowledge the tap within the same frame, so a slow round trip on
+       studio wifi does not look like nothing happened. Safe on the plain path
+       too: the browser has already taken the submission by the time this runs
+       and every one of these actions can be repeated without harm. */
+    var button = form.querySelector('button[type="submit"]');
+    if (button) { setTimeout(function () { button.disabled = true; }, 0); }
+
+    if (!CAN_SWAP) { return; }
+    e.preventDefault();
+    send(form);
   });
+
+  /* Back and forward move between days, because each one was pushed. The
+     browser has already changed the URL by the time this fires, so the region
+     is fetched to match it and nothing is written to history. */
+  window.addEventListener('popstate', function () {
+    go(location.href, 'none');
+  });
+
+  if (CAN_SWAP) {
+    // Give the first entry a state object, and drop any leftover #day so the
+    // address bar matches every URL the swap will push after it.
+    history.replaceState({ live: true }, '', location.pathname + location.search);
+  }
+  enhance(LIVE);
 })();
 </script>
 
