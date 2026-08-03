@@ -126,10 +126,26 @@ async function runReport(token, body) {
 
 const num = (v) => (v == null ? 0 : Number(v));
 
+/* Tolerate ONE report failing. Never tolerate all of them.
+ *
+ * safe() exists so that a single optional report going missing does not cost us
+ * the whole snapshot. But it swallowed permission errors too, and a credential
+ * with no access to the property fails EVERY report — so the run "succeeded",
+ * wrote a fully-formed snapshot with n/a in every field, and the dashboard would
+ * have shown a live-looking panel reading zero.
+ *
+ * That is the one outcome this file must never produce, because the presence of
+ * the snapshot is what tells the admin the connection is real. So the failures
+ * are counted, and main() refuses to write when nothing came back at all. */
+let attempted = 0;
+let failed = 0;
+
 async function safe(label, fn, fallback) {
+  attempted++;
   try {
     return await fn();
   } catch (e) {
+    failed++;
     console.warn(`! skipped "${label}": ${e.message}`);
     return fallback;
   }
@@ -329,6 +345,30 @@ async function main() {
     audience: { country, device, newVsReturning },
     trend,
   };
+
+  /* Refuse to overwrite a good snapshot with a hollow one.
+   *
+   * Two independent guards, because they catch different things. The count
+   * catches a credential with no access at all — every report 403s. The metric
+   * check catches the subtler case where some reports pass but the ONE window
+   * the dashboard actually reads came back empty.
+   *
+   * Exiting non-zero and leaving the previous file alone is the right failure:
+   * the admin then shows yesterday's numbers and its own staleness warning,
+   * which is true, instead of today's zeros, which are a lie. */
+  if (attempted > 0 && failed === attempted) {
+    throw new Error(
+      `every one of the ${attempted} reports failed — refusing to write. ` +
+      `The usual cause is the credential having no access to property ${PROPERTY_ID}. ` +
+      `The existing snapshot has been left untouched.`
+    );
+  }
+  if (windows.d30?.metrics?.sessions?.v == null && windows.d30?.metrics?.totalUsers?.v == null) {
+    throw new Error(
+      'the 30-day window came back with neither sessions nor users — refusing to write, ' +
+      'because that is the one window the dashboard reads. Existing snapshot left untouched.'
+    );
+  }
 
   mkdirSync(dirname(OUT_PATH), { recursive: true });
   writeFileSync(OUT_PATH, JSON.stringify(snapshot, null, 2));
