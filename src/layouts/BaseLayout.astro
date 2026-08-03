@@ -251,7 +251,12 @@ const orgJsonLd = {
           <li><a href="https://wa.me/6596210576">+65 9621 0576</a></li>
           <li><a href="mailto:Jeffrey.f@jfselfdefense.com">Jeffrey.f@jfselfdefense.com</a></li>
           <li><a href="https://facebook.com/jfselfdefense">Facebook</a></li>
-          <li><a href="#">ClassPass</a></li>
+          {/* Was href="#" — a placeholder that shipped. On all twelve pages it
+              sat between three working links and did nothing when tapped.
+              Worse than a dead link usually is: ClassPass is where Jeffrey has
+              21 reviews at 4.9, the strongest public proof he has anywhere,
+              and it was the one destination the footer refused to reach. */}
+          <li><a href="https://classpass.com/studios/jf-self-defense-singapore" target="_blank" rel="noopener">ClassPass</a></li>
         </ul>
       </div>
     </div>
