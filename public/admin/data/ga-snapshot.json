@@ -1,6 +1,6 @@
 {
   "_note": "Build-time GA4 fallback, refreshed each CI deploy and baked into dist. A stale generatedAt here does NOT mean the dhp-ga4-reader credential died — the committed copy only updates when someone runs `npm run snapshot` locally; live data updates per successful deploy. If in doubt, run this script (it prints the auth mode) or check pinkaling.dev/pitch/. See playbook §9 ledger 2026-07-26.",
-  "generatedAt": "2026-08-02T05:20:01.782Z",
+  "generatedAt": "2026-08-03T04:04:50.356Z",
   "propertyId": "547369215",
   "windows": {
     "d7": {
@@ -22,12 +22,12 @@
           "delta": null
         },
         "averageSessionDuration": {
-          "v": 238.8920106923077,
+          "v": 238.98585123076924,
           "prev": 0,
           "delta": null
         },
         "engagementRate": {
-          "v": 0.23076923076923078,
+          "v": 0.3076923076923077,
           "prev": 0,
           "delta": null
         }
@@ -52,12 +52,12 @@
           "delta": null
         },
         "averageSessionDuration": {
-          "v": 238.8920106923077,
+          "v": 238.98585123076924,
           "prev": 0,
           "delta": null
         },
         "engagementRate": {
-          "v": 0.23076923076923078,
+          "v": 0.3076923076923077,
           "prev": 0,
           "delta": null
         }
@@ -82,12 +82,12 @@
           "delta": null
         },
         "averageSessionDuration": {
-          "v": 238.8920106923077,
+          "v": 238.98585123076924,
           "prev": 0,
           "delta": null
         },
         "engagementRate": {
-          "v": 0.23076923076923078,
+          "v": 0.3076923076923077,
           "prev": 0,
           "delta": null
         }
@@ -147,12 +147,6 @@
       "users": 12
     },
     {
-      "source": "(not set)",
-      "medium": "(not set)",
-      "sessions": 1,
-      "users": 1
-    },
-    {
       "source": "google",
       "medium": "organic",
       "sessions": 1,
@@ -196,10 +190,6 @@
       {
         "name": "new",
         "users": 13
-      },
-      {
-        "name": "(unknown)",
-        "users": 1
       }
     ]
   },
