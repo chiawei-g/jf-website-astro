@@ -1,0 +1,54 @@
+{
+  "_note": "Search Console snapshot for the admin \"Search queries\" panel, written by scripts/fetch-gsc-snapshot.mjs. The PRESENCE of this file is what tells the dashboard that Search Console is genuinely connected, so it is only ever written after a successful searchanalytics.query — never as a placeholder. topQueries: [] therefore means \"connected, Google has nothing to report yet\", which is a normal state for the first few days of a new property and is NOT an error. Aggregate figures only; no visitor is identifiable here. Numbers can read slightly below Search Console's own UI because Google drops rare queries for privacy, and drops more of them at this query+page+date granularity than at query alone (guide C6).",
+  "generatedAt": "2026-08-03T02:36:30.825Z",
+  "siteUrl": "https://jfselfdefense.com/",
+  "range": {
+    "startDate": "2026-07-03",
+    "endDate": "2026-07-30"
+  },
+  "dataState": "final",
+  "totals": {
+    "clicks": 0,
+    "impressions": 12,
+    "position": 13.8
+  },
+  "queryCount": 5,
+  "rowCount": 6,
+  "topQueries": [
+    {
+      "query": "is pepper spray legal in singapore",
+      "clicks": 0,
+      "impressions": 8,
+      "ctr": 0,
+      "position": 12
+    },
+    {
+      "query": "how does self defense law work",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "query": "pepper spray legal in singapore",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 12
+    },
+    {
+      "query": "pepper spray singapore law",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 17
+    },
+    {
+      "query": "self defence courses",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 29
+    }
+  ]
+}

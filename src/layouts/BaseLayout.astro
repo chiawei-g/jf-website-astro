@@ -114,6 +114,24 @@ const orgJsonLd = {
 <title>{fullTitle}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={canonical} />
+
+{/* Search Console ownership for the seo-reader service account.
+
+    This is NOT the site's own verification — that one is the file
+    /googleaacfe4f54c70a8fd.html in public/, which proves Chia's personal
+    Google account owns the property. This tag proves it a second time, to a
+    second identity: seo-reader@dhp-site-analytics, the robot that pulls the
+    search-query data the admin dashboard shows.
+
+    It needs its own proof because Search Console will not let you grant a
+    service account access through the "Add user" box — it rejects the address
+    as "not a Google Account", a confirmed Google bug open since April 2026.
+    The documented way round it is to make the robot an owner in its own right
+    via the Site Verification API, which is what this tag is for.
+
+    Both proofs must stay. Deleting either one un-verifies that identity, and
+    Google re-checks periodically rather than only once. */}
+<meta name="google-site-verification" content="sYcvfm9HSjUiFma_wmNXD7tpPgrGvNBW_hDQZUBkef4" />
 {noindex && <meta name="robots" content="noindex,nofollow" />}
 
 <link rel="icon" type="image/png" href="/assets/logo.png" />

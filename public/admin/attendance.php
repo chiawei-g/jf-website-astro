@@ -97,7 +97,17 @@ function jfsd_day_summary(
     $classes = jfsd_classes_on_date($sessions, $ymd);
     $came    = 0;
     $empty   = 0;
+    $missed  = 0;
     $first   = null;
+
+    /* The wall clock, not just the date.
+     *
+     * A class that has not finished yet cannot be missing anybody — nothing has
+     * happened. Judging on the date alone painted tonight's 7pm class red from
+     * midnight, so the calendar opened every class day already accusing him of
+     * a class that was still hours away, and the count at the top said "2
+     * classes with nobody on the list" when one of them had not started. */
+    $nowHm = (new DateTimeImmutable('now', new DateTimeZone(jfsd_tz())))->format('H:i');
 
     foreach ($classes as $class) {
         $id = (string) $class['id'];
@@ -108,6 +118,10 @@ function jfsd_day_summary(
             if ($first === null) {
                 $first = $class;
             }
+            // Over and done with, and still nobody on it.
+            if ($ymd < $today || ($ymd === $today && (string) ($class['end'] ?? '') <= $nowHm)) {
+                $missed++;
+            }
         }
     }
 
@@ -117,8 +131,9 @@ function jfsd_day_summary(
         'came'    => $came,
         'empty'   => $empty,
         'first'   => $first,
-        'needs'   => $empty > 0
-            && $ymd <= $today
+        /* Red means "this one wants you", so it has to be true when he looks.
+           A class still to come is not a problem, it is a plan. */
+        'needs'   => $missed > 0
             && $ymd >= $windowFrom
             && $floor !== null && $ymd >= $floor,
     ];
@@ -424,13 +439,13 @@ endif; ?>
   </div>
 
   <div class="adm-panel-b is-flush">
-    <?php if ($day['total'] === 0): ?>
-      <div class="adm-empty">
-        <strong>No classes on <?= jfsd_e(jfsd_date_long($date)) ?>.</strong>
-        Classes normally run on Monday and Wednesday evenings, and Saturday and Sunday
-        mornings. If one ran here anyway, put it on below.
-      </div>
-    <?php else: ?>
+    <?php /* A day with no class says nothing about itself. The panel heading
+             above already names the date, the grid above that already showed
+             the day was blank, and a paragraph explaining which evenings
+             classes usually run on is three sentences telling him something he
+             is the one who decided. All that is left to offer is the way to put
+             a class on, so that is all there is. */ ?>
+    <?php if ($day['total'] !== 0): ?>
       <?php foreach ($day['classes'] as $class):
           $cid   = (string) $class['id'];
           $start = (string) $class['start'];
@@ -620,13 +635,14 @@ endif; ?>
       <?php endforeach; ?>
     <?php endif; ?>
 
+    <?php /* "another time" only means something when there is already a class
+             to be another one than. On a blank day it is the only thing on
+             offer, so it just says what it does. */ ?>
     <details class="adm-add-class"<?= $day['total'] === 0 ? ' open' : '' ?>>
-      <summary>Add a class at another time</summary>
+      <summary><?= $day['total'] === 0 ? 'Add a class' : 'Add a class at another time' ?></summary>
       <div class="adm-add-class-b">
-        <p class="adm-hint adm-mb">
-          For a time the venue moved, or a one-off somebody asked for. It only affects
-          <?= jfsd_e(jfsd_date_long($date)) ?>.
-        </p>
+        <?php /* The panel heading already says which day this is, twice. */ ?>
+        <p class="adm-hint adm-mb">For a one-off, or a time the venue moved.</p>
         <form class="trial-form" method="post" action="/admin/attendance.php">
           <?= admin_csrf_field() ?>
           <?= jfsd_nonce_field() ?>

@@ -623,12 +623,24 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 /* The box is reserved on every cell, so today filling it in — or the chosen day
    outlining it — cannot make its row a pixel taller than the rest of the
    month. */
+/* A circle, not the brand's square.
+ *
+ * Everything else in this admin is square because the brand is square. This one
+ * is not, and deliberately: every other square on the page is a THING — a cell,
+ * a panel, a chip. This mark means "you are here", which is a different kind of
+ * statement, and a round mark reads as a pointer rather than as one more box
+ * inside a grid already made of boxes. It is also the shape every calendar the
+ * user has ever used puts around today, so it needs no learning.
+ *
+ * Width and height are locked equal so it is a circle at every date width; "31"
+ * is the widest it ever has to hold and clears it at 11px mono. */
 .adm-cal-date {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 19px;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
   font-family: var(--f-mono);
   font-size: 11px;
   line-height: 1;
