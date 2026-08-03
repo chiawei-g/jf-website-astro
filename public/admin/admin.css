@@ -295,6 +295,14 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 .adm-table a:hover { color: var(--red); border-color: var(--red); }
 .adm-sub { display: block; font-size: 12px; color: var(--ink-3); margin-top: 3px; }
 
+/* A sessions balance is written into the page twice, as a number and as a
+   sentence, and the layout shows whichever one has a heading to lean on. With
+   the column header present the number is enough and the sentence would repeat
+   it; with the header gone — see .adm-people below — the number is a digit with
+   no noun. display:none rather than a class swap, so the version that is not
+   showing is out of the accessibility tree too and nothing is read twice. */
+.adm-bal-say { display: none; }
+
 /* ---------- Pills -------------------------------------------------------- */
 .adm-pill {
   display: inline-block;
@@ -361,21 +369,122 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 .adm-hint { font-size: 13px; color: var(--ink-3); line-height: 1.5; margin: 0; }
 .adm-inline-form { display: inline; }
 
-.adm-filters {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: flex-end;
-}
-.adm-filters .adm-field { flex: 1 1 240px; }
-.adm-field label { display: block; }
-
 .adm-opt { text-transform: none; letter-spacing: 0.02em; opacity: 0.7; }
 .adm-mb { margin-bottom: 16px; }
 .adm-mt { margin-top: 24px; }
 
-.adm-chips { display: flex; gap: 8px; flex-wrap: wrap; }
-.adm-chips-row { margin: 20px 0 28px; }
+/* ---------- The Students toolbar ----------------------------------------- */
+/* Replaces .adm-filters / .adm-field, which are gone.
+ *
+ * Those two rules were written for a row and ended up on an element that also
+ * carried the public site's .trial-form, which lays its children out in a
+ * COLUMN. .adm-filters never declared a direction of its own, so column won and
+ * both of its declarations were then applied down the wrong axis: flex-end
+ * became horizontal alignment (the search box floating against the right edge)
+ * and flex-basis became a height (a 240px-tall wrapper around a 58px label, and
+ * a 194px hole between the field and its own Search button). Neither class is
+ * used anywhere else, so rather than teach .adm-filters a direction, the page
+ * stopped mixing the two vocabularies at all.
+ *
+ * What replaces it is one object per job: the thing that ADDS somebody, and the
+ * frame that decides WHICH people are listed. Both are full width on a phone,
+ * both start at the page gutter, and the frame's internals are separated by
+ * hairlines rather than by page-level gaps — so there is one edge to read down
+ * instead of four. */
+.adm-tools {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  /* A name is a short thing to type. Left to itself this group would run the
+     full 1440px and the Search button would end up a screen away from the
+     field. Matches the 560px the rest of the admin's single-field blocks use. */
+  max-width: 560px;
+  margin-bottom: 28px;
+}
+/* Every control in here carries the findable edge. .adm-btn inherits the
+   divider hairline, which measures ~1.8:1 against the page and is under the 3:1
+   an interactive boundary needs. Scoped rather than fixed at source, because
+   .adm-btn is on every screen in this admin and that is a change of its own. */
+.adm-tools .adm-btn { border-color: var(--adm-edge); }
+/* Deliberately NOT the red button it used to be. On this page red means a
+   student who has run out and wants chasing — there are pills saying exactly
+   that in the list below. A full-width red bar sitting above them would be the
+   loudest thing on the screen while meaning nothing, and would drown the two
+   rows that do. The first-run call to action inside the empty panel is still
+   red, because there it is the only thing there is to do. */
+.adm-tools-add { align-self: flex-start; }
+
+.adm-find { border: 1px solid var(--line-2); background: var(--bg); }
+.adm-find-b { padding: 14px 16px 16px; }
+.adm-find-label {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+/* The button belongs to the field, so it sits beside it. */
+.adm-find-row { display: flex; gap: 10px; align-items: stretch; }
+.adm-find-row .adm-btn { flex: 0 0 auto; }
+
+/* What the search found and the way back out of it, on one line inside the same
+   frame as the field that caused it. Exists only while there is a query. */
+.adm-find-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  flex-wrap: wrap;
+  min-height: var(--adm-tap);
+  margin: 0;
+  padding: 4px 6px 4px 16px;
+  border-top: 1px solid var(--line-2);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.adm-find-clear {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;      /* floor, not decoration — the label is only five characters */
+  padding: 0 12px;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.adm-find-clear:hover { color: var(--red); }
+.adm-find-clear:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+/* Active / Everyone as two halves of one control. Equal widths so neither reads
+   as the default, and 160px of target each on a phone instead of a 110px pill.
+   The divider is a 1px grid gap showing the frame through, the same way the
+   calendar draws its hairlines, so neither half ever carries a double border. */
+.adm-scope {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line-2);
+  border-top: 1px solid var(--line-2);
+}
+.adm-scope .adm-chip {
+  justify-content: center;
+  text-align: center;
+  min-height: var(--adm-tap);
+  border: 0;
+  background: var(--bg);
+}
+.adm-scope .adm-chip:hover { background: var(--bg-2); }
+/* Written at a specificity that beats both of the above so it cannot depend on
+   which rule happens to come last in this file. The chosen half is red on every
+   state, including while a thumb is resting on it. */
+.adm-scope .adm-chip.is-active { background: var(--red); }
+
 .adm-chip {
   display: inline-flex;
   align-items: center;
@@ -714,8 +823,14 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
 .adm-add-row .adm-btn { flex: 0 0 auto; }
 
 /* Controls introduced with this rebuild, so they carry an edge that is actually
-   findable rather than the divider hairline the older ones inherited. */
+   findable rather than the divider hairline the older ones inherited.
+   The Students search field joins this group rather than getting its own copy:
+   there is one definition of "a text control in this admin" and it lives here.
+   That is also why the Students filter form stopped carrying .trial-form — it
+   was borrowing the public site's field styling and the public site's column
+   layout together, and it only ever wanted the first one. */
 .adm-add-in,
+.adm-find-in,
 .adm-add-row select {
   flex: 1 1 auto;
   width: 100%;
@@ -733,10 +848,13 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   outline: none;
   transition: border-color 0.15s;
 }
-.adm-add-in::placeholder { color: var(--ink-3); opacity: 1; }
+.adm-add-in::placeholder,
+.adm-find-in::placeholder { color: var(--ink-3); opacity: 1; }
 .adm-add-in:focus,
+.adm-find-in:focus,
 .adm-add-row select:focus { border-color: var(--ink-2); }
 .adm-add-in:focus-visible,
+.adm-find-in:focus-visible,
 .adm-add-row select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .adm-add-in[disabled] { opacity: 0.6; }
 .adm-add-row select {
@@ -986,6 +1104,87 @@ a.adm-card:hover { background: var(--bg-2); border-color: var(--red); }
   .adm-add { padding: 16px 16px 20px; }
   .adm-add-class > summary { padding: 0 16px; }
   .adm-add-class-b { padding: 4px 16px 20px; }
+
+  /* ---- Students: the toolbar ------------------------------------------- */
+  /* Both objects take the whole width. The thing that was wrong here was never
+     the size of any one control, it was that four of them started at four
+     different left edges; one edge down the page is the fix. */
+  .adm-tools { max-width: none; gap: 14px; margin-bottom: 20px; }
+  .adm-tools-add { align-self: stretch; }
+
+  /* ---- Students: the list of people ------------------------------------ */
+  /* Six columns and 665px of table inside a 320px box is not a table. It is a
+   * sideways scroller nobody discovers, and the number he actually came to read
+   * is the one parked off the right-hand edge.
+   *
+   * So below 760px the SAME markup — one table, one loop, no phone-only
+   * template to drift out of step — is laid out as a list of people. Four
+   * things get a place and the rest steps back:
+   *
+   *     the name, with how to reach them underneath   left, level 1
+   *     how many sessions are left                    right, level 1
+   *     which plan they are on                        left, level 2
+   *     anything other than Active                    right, level 2
+   *
+   * Joined and the Payments shortcut come off. The date is on the person's own
+   * record a tap away, and money gets recorded from the Payments page, which is
+   * in the bar at the top of every screen and opens on exactly the people who
+   * need chasing. Neither was worth a third tap target on a row he is
+   * scrolling past.
+   *
+   * The desktop table above 760px is untouched — same columns, same order.
+   *
+   * Trade-off worth knowing about: overriding table display means some screen
+   * readers stop announcing this as a table on a narrow screen. At 375px it is
+   * genuinely not one, and the alternative was a scroller that hides half the
+   * row, so this is the better of the two. */
+  .adm-people,
+  .adm-people tbody { display: block; width: 100%; min-width: 0; }
+  .adm-people thead { display: none; }
+  .adm-people tr {
+    display: grid;
+    /* The balance is capped rather than left to size itself: "9 more than paid
+       for" is a real value and a nowrap version of it would eat the name. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 45%);
+    align-items: baseline;
+    gap: 6px 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .adm-people tr:last-child { border-bottom: 0; }
+  /* Nothing hovers on a phone, but a tap leaves the state stuck on the row he
+     just left, which reads as "this one is selected" when it is not. */
+  .adm-people tr:hover td { background: transparent; }
+  .adm-people td { display: block; padding: 0; border: 0; }
+  .adm-people td.is-name   { grid-column: 1; grid-row: 1; position: relative; min-height: 44px; }
+  .adm-people td.is-bal    { grid-column: 2; grid-row: 1; white-space: normal; }
+  .adm-people td.is-plan   { grid-column: 1; grid-row: 2; }
+  .adm-people td.is-status { grid-column: 2; grid-row: 2; text-align: right; }
+  .adm-people td.is-joined,
+  .adm-people td.is-pay,
+  .adm-people td.is-status.is-usual { display: none; }
+
+  /* The whole name block opens the record, not just the six words of the link.
+     Name and contact details together are a ~55px area, which is the target the
+     thumb was aiming at anyway. The overlay is bounded by the cell, so it can
+     never reach across the gap into the balance beside it. */
+  .adm-people td.is-name a { font-size: 17px; }
+  .adm-people td.is-name a::after { content: ""; position: absolute; inset: -7px -6px -4px -6px; }
+  .adm-people td.is-name a:focus-visible { outline: none; }
+  .adm-people td.is-name a:focus-visible::after { outline: 2px solid var(--ink); }
+
+  .adm-people td.is-plan {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .adm-people td.is-bal .adm-bal-n { display: none; }
+  .adm-people td.is-bal .adm-bal-say { display: inline; }
+  /* The only pill in this admin allowed to wrap. It has to be, because the
+     sentence inside it is occasionally twenty characters long. */
+  .adm-people td.is-bal .adm-pill { white-space: normal; }
 }
 
 /* Nothing here is choreography — every transition is state feedback — but a

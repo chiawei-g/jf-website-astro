@@ -225,10 +225,29 @@ $activeCount = count(jfsd_active_students($students));
 
 jfsd_head('Students', 'students');
 
-$action = $showForm
-    ? '<a class="adm-btn" href="/admin/students.php">Back to the list</a>'
-    : '<a class="adm-btn adm-btn-red" href="/admin/students.php?new=1">Add a student</a>';
-jfsd_page_title('Roster', $showForm ? (($form['id'] ?? '') !== '' ? 'Edit student' : 'Add a student') : 'Students', $action);
+/* The eyebrow names the section and the heading says what the screen is, which
+ * is how Attendance already reads: "Attendance / Who came". It used to say
+ * "Roster", a word nobody in the studio says out loud and one this admin does
+ * not use anywhere a person can see it.
+ *
+ * The LIST screen deliberately carries no action up here any more. At 375px
+ * "Add a student" was a 134px button wedged into the top right corner beside
+ * the H1 — the most expensive corner on a phone to reach, close enough to the
+ * heading to read as part of it, and the reason the top of this page looked
+ * like two things fighting over one line. It has moved down into the toolbar
+ * with the other controls.
+ *
+ * The FORM screen keeps its top-right action, because "Back to the list" is an
+ * escape, and the far corner is exactly where an escape belongs. */
+if ($showForm) {
+    jfsd_page_title(
+        'Students',
+        ($form['id'] ?? '') !== '' ? 'Edit student' : 'Add a student',
+        '<a class="adm-btn" href="/admin/students.php">Back to the list</a>'
+    );
+} else {
+    jfsd_page_title('Students', 'Who trains here');
+}
 ?>
 
 <?php if ($showForm): ?>
@@ -345,48 +364,127 @@ jfsd_page_title('Roster', $showForm ? (($form['id'] ?? '') !== '' ? 'Edit studen
 
 <?php else: ?>
 
-  <form class="trial-form adm-filters" method="get" action="/admin/students.php">
-    <div class="adm-field">
-      <label>Search
-        <input type="search" name="q" placeholder="Name, email or phone" value="<?= jfsd_e($q) ?>">
-      </label>
+  <?php
+  /* ONE control group where there used to be four separate things.
+   *
+   * The old markup put this form's classes on the same element as the public
+   * site's .trial-form, which lays its children out in a COLUMN. Both of the
+   * .adm-filters declarations underneath it had been written for a ROW, so they
+   * were being applied down the wrong axis: align-items:flex-end stopped being
+   * vertical alignment and became "shove everything to the right edge", and
+   * flex:1 1 240px stopped being a width and became a 240px HEIGHT — which is
+   * where the 194px hole between the search box and its own Search button came
+   * from. Nothing was going to fix that from inside .adm-filters, so the class
+   * pair is gone entirely and this block owns its own layout.
+   *
+   * But a straightened-out row would still have been four objects at four
+   * different left edges: type a name, press Search, choose Active or Everyone,
+   * add somebody. Three of those are the same question — WHICH of these people
+   * am I looking at — so they now share one frame, hairline-separated, at one
+   * full-page width. The fourth is the only thing on the screen that creates
+   * something, so it sits on its own above it.
+   *
+   * The whole group is hidden when there is nobody on the books: there is
+   * nothing to search and nothing to filter, and the empty panel below says the
+   * one thing there is to do. */
+  ?>
+  <?php if ($students): ?>
+    <div class="adm-tools">
+      <a class="adm-btn adm-tools-add" href="/admin/students.php?new=1">Add a student</a>
+
+      <div class="adm-find">
+        <?php
+        /* Still a plain GET with one field, so this works with scripting off and
+           the result is a URL he could bookmark. The Search button stays even
+           though Enter would submit: he is not a keyboard person, the field is
+           reached by tapping and left by tapping somewhere else, and a form that
+           only responds to a key he never presses is a form that looks broken.
+           It sits ON THE SAME LINE as the field now, which is the fix — it was
+           194px below it and reading as an unrelated button. */
+        ?>
+        <form class="adm-find-b" method="get" action="/admin/students.php">
+          <label class="adm-find-label" for="adm-find-q">Find a student</label>
+          <div class="adm-find-row">
+            <input class="adm-find-in" id="adm-find-q" type="search" name="q" maxlength="60"
+                   value="<?= jfsd_e($q) ?>" placeholder="Type a name"
+                   autocomplete="off" autocapitalize="words" spellcheck="false"
+                   enterkeyhint="search">
+            <input type="hidden" name="scope" value="<?= jfsd_e($scope) ?>">
+            <button class="adm-btn" type="submit">Search</button>
+          </div>
+        </form>
+
+        <?php /* What the search did, and the way out of it, inside the same frame
+                 as the field that caused it — rather than as a heading over a
+                 panel further down, where it read as a fact about the list
+                 instead of as something he had just done. Only exists while
+                 there is a query. */ ?>
+        <?php if ($q !== ''): ?>
+          <p class="adm-find-state">
+            <span><?= count($rows) ?> matching &ldquo;<?= jfsd_e($q) ?>&rdquo;</span>
+            <a class="adm-find-clear" href="/admin/students.php?scope=<?= jfsd_e($scope) ?>">Clear</a>
+          </p>
+        <?php endif; ?>
+
+        <?php /* Two halves of one control rather than two links that happen to be
+                 near each other. Equal widths so neither reads as the default,
+                 and each half is a 160px target on his phone instead of a 110px
+                 pill. The counts are the size of each SCOPE, which is why they do
+                 not move when a search narrows the list. */ ?>
+        <div class="adm-scope">
+          <a class="adm-chip<?= $scope === 'active' ? ' is-active' : '' ?>"
+             <?= $scope === 'active' ? 'aria-current="true" ' : '' ?>href="/admin/students.php?scope=active<?= $q !== '' ? '&amp;q=' . rawurlencode($q) : '' ?>">Active (<?= (int) $activeCount ?>)</a>
+          <a class="adm-chip<?= $scope === 'all' ? ' is-active' : '' ?>"
+             <?= $scope === 'all' ? 'aria-current="true" ' : '' ?>href="/admin/students.php?scope=all<?= $q !== '' ? '&amp;q=' . rawurlencode($q) : '' ?>">Everyone (<?= count($students) ?>)</a>
+        </div>
+      </div>
     </div>
-    <input type="hidden" name="scope" value="<?= jfsd_e($scope) ?>">
-    <button class="adm-btn" type="submit">Search</button>
-    <?php if ($q !== ''): ?>
-      <a class="adm-btn adm-btn-quiet" href="/admin/students.php?scope=<?= jfsd_e($scope) ?>">Clear</a>
-    <?php endif; ?>
-  </form>
+  <?php endif; ?>
 
-  <div class="adm-chips adm-chips-row">
-    <a class="adm-chip<?= $scope === 'active' ? ' is-active' : '' ?>"
-       href="/admin/students.php?scope=active<?= $q !== '' ? '&amp;q=' . rawurlencode($q) : '' ?>">Active (<?= (int) $activeCount ?>)</a>
-    <a class="adm-chip<?= $scope === 'all' ? ' is-active' : '' ?>"
-       href="/admin/students.php?scope=all<?= $q !== '' ? '&amp;q=' . rawurlencode($q) : '' ?>">Everyone (<?= count($students) ?>)</a>
-  </div>
-
+  <?php /* No panel heading on this screen. It used to say "9 shown" directly
+           under a chip that said "Active (9)", which is the same fact twice, and
+           on a phone that stutter cost a whole 55px strip above the only thing
+           anybody came here to read. The frame above names the scope and says
+           what a search found; the panel is the list. */ ?>
   <div class="adm-panel">
-    <div class="adm-panel-h">
-      <h2 class="adm-panel-title"><?= count($rows) ?> shown</h2>
-      <?php if ($q !== ''): ?>
-        <p class="adm-panel-note">Matching &ldquo;<?= jfsd_e($q) ?>&rdquo;</p>
-      <?php endif; ?>
-    </div>
     <div class="adm-panel-b is-flush">
       <?php if (!$rows): ?>
         <div class="adm-empty">
-          <strong><?= $students ? 'Nothing matches.' : 'No students yet.' ?></strong>
-          <?php if ($students): ?>
-            Try a shorter search, or switch to Everyone.
-          <?php else: ?>
+          <?php if (!$students): ?>
+            <strong>No students yet.</strong>
+            Everyone you teach lives here: their plan, how many sessions they have left,
+            and how to reach them.
             <p class="adm-empty-cta">
               <a class="adm-btn adm-btn-red" href="/admin/students.php?new=1">Add your first student</a>
             </p>
+          <?php elseif ($q !== ''): ?>
+            <strong>Nothing matches.</strong>
+            Try fewer letters<?= $scope === 'active' ? ', or tap Everyone to include people who have paused or left' : '' ?>.
+          <?php else: ?>
+            <strong>Nobody is active right now.</strong>
+            Tap Everyone to see people who have paused or left.
           <?php endif; ?>
         </div>
       <?php else: ?>
+        <?php
+        /* ONE table, ONE loop. Above 760px it is the six-column table it always
+         * was. Below 760px the same cells are laid out as a list of people —
+         * see .adm-people in admin.css — because 665px of table inside a 320px
+         * box is not a table, it is a sideways scroller that nobody discovers,
+         * with the one number on the row that matters parked off the right edge.
+         *
+         * The cell classes below exist so that reflow has something to aim at.
+         * Nothing is rendered twice and there is no phone-only markup to drift
+         * out of step with the desktop one.
+         *
+         * .is-usual on a Status cell means "this person is Active", which is the
+         * ordinary case and therefore worth nothing on a phone: in the Active
+         * scope every row would carry the same pill, and in Everyone the useful
+         * signal is the rows that DON'T say Active. The full column stays on the
+         * desktop table, where a column costs nothing. */
+        ?>
         <div class="adm-scroll">
-          <table class="adm-table">
+          <table class="adm-table adm-people">
             <thead>
               <tr>
                 <th>Name</th>
@@ -400,7 +498,8 @@ jfsd_page_title('Roster', $showForm ? (($form['id'] ?? '') !== '' ? 'Edit studen
             <tbody>
               <?php foreach ($rows as $s):
                   $left   = (int) ($s['sessions_remaining'] ?? 0);
-                  $isLow  = $left <= 0 && ($s['status'] ?? '') === 'active' && ($s['plan'] ?? '') !== 'corporate';
+                  $isCorp = ($s['plan'] ?? '') === 'corporate';
+                  $isLow  = $left <= 0 && ($s['status'] ?? '') === 'active' && !$isCorp;
                   $status = (string) ($s['status'] ?? 'active');
                   ?>
                 <tr>
@@ -410,17 +509,30 @@ jfsd_page_title('Roster', $showForm ? (($form['id'] ?? '') !== '' ? 'Edit studen
                       <span class="adm-sub"><?= jfsd_e(trim((string) ($s['email'] ?? '') . '  ' . (string) ($s['phone'] ?? ''))) ?></span>
                     <?php endif; ?>
                   </td>
-                  <td><?= jfsd_e(JFSD_PLANS[$s['plan'] ?? '']['label'] ?? (string) ($s['plan'] ?? '—')) ?></td>
-                  <td class="is-num">
+                  <td class="is-plan"><?= jfsd_e(JFSD_PLANS[$s['plan'] ?? '']['label'] ?? (string) ($s['plan'] ?? '—')) ?></td>
+                  <?php
+                  /* A bare "4" under a "Sessions left" header reads fine. With the
+                     header gone on a phone it is a number with no noun, so the
+                     cell carries both and the layout picks one. The words are
+                     jfsd_sessions_left_phrase(), the same sentence the attendance
+                     page says, so a balance is worded one way in this admin.
+                     A corporate student does not buy sessions, so the sentence is
+                     simply not written: the phone would otherwise say "none left"
+                     beside somebody whose company pays a retainer, which reads as
+                     a person to chase. The desktop column still prints the stored
+                     figure, exactly as it did before. */
+                  ?>
+                  <td class="is-num is-bal">
                     <?php if ($isLow): ?>
-                      <span class="adm-pill adm-pill-alert"><?= $left ?></span>
+                      <span class="adm-pill adm-pill-alert"><span class="adm-bal-n"><?= $left ?></span><span class="adm-bal-say"><?= jfsd_e(jfsd_sessions_left_phrase($left)) ?></span></span>
                     <?php else: ?>
-                      <?= $left ?>
+                      <span class="adm-bal-n"><?= $left ?></span>
+                      <?php if (!$isCorp): ?><span class="adm-bal-say"><?= jfsd_e(jfsd_sessions_left_phrase($left)) ?></span><?php endif; ?>
                     <?php endif; ?>
                   </td>
-                  <td><span class="adm-pill adm-pill-<?= jfsd_e($status) ?>"><?= jfsd_e(JFSD_STUDENT_STATUSES[$status] ?? $status) ?></span></td>
-                  <td><?= jfsd_e(jfsd_date_friendly((string) ($s['joined_date'] ?? ''))) ?></td>
-                  <td class="is-num">
+                  <td class="is-status<?= $status === 'active' ? ' is-usual' : '' ?>"><span class="adm-pill adm-pill-<?= jfsd_e($status) ?>"><?= jfsd_e(JFSD_STUDENT_STATUSES[$status] ?? $status) ?></span></td>
+                  <td class="is-joined"><?= jfsd_e(jfsd_date_friendly((string) ($s['joined_date'] ?? ''))) ?></td>
+                  <td class="is-num is-pay">
                     <a href="/admin/payments.php?student=<?= rawurlencode((string) ($s['id'] ?? '')) ?>">Payments</a>
                   </td>
                 </tr>
