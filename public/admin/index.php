@@ -26,45 +26,23 @@ $payments   = jfsd_read('payments');
 $attendance = jfsd_read('attendance');
 $sessions   = jfsd_read('sessions');
 
-$today       = jfsd_today();
-$roster      = jfsd_active_students($students);
-$attention   = jfsd_needs_attention($students);
-$classCounts = jfsd_attendance_counts($attendance);
+$today        = jfsd_today();
+$attention    = jfsd_needs_attention($students);
+$classCounts  = jfsd_attendance_counts($attendance);
 $classesToday = jfsd_classes_on_date($sessions, $today);
 
-// This calendar month's takings, studio time. Voided rows and balance
-// corrections are not money and must never appear in this figure.
-$monthPrefix = substr($today, 0, 7);
-$monthTotal  = 0.0;
-$monthCount  = 0;
-foreach (jfsd_live_payments($payments) as $p) {
-    if (!jfsd_payment_is_money($p)) {
-        continue;
-    }
-    if (str_starts_with((string) ($p['date_received'] ?? ''), $monthPrefix)) {
-        $monthTotal += (float) ($p['amount_sgd'] ?? 0);
-        $monthCount++;
-    }
-}
+/* The month's takings, the week's attendance count and the active-student
+   count used to be worked out here, for the four headline cards. The cards are
+   gone, so the work is too — each one walked the whole payments or attendance
+   file on every page load to produce a number nothing renders any more. Left
+   in place they would have been three silent loops and four variables that
+   read as though something still depended on them. */
 
 /* Does every stored balance still match the payments and attendance behind it?
    This should always be empty. It is surfaced because when it is not, the only
    alternative is Jeffrey discovering it by accident, months later, on one
    student. */
 $drift = jfsd_reconcile($students, $payments, $attendance);
-
-/* Attendance across the last 7 days, as a simple health signal. Being on a
-   class list IS having come, so there is nothing to filter for. A row carries
-   no date of its own — the class record owns that — so this joins through it. */
-$weekAgo      = date('Y-m-d', (int) strtotime($today . ' -6 days'));
-$sessionDates = jfsd_session_dates($sessions);
-$weekCame     = 0;
-foreach ($attendance as $row) {
-    $d = $sessionDates[(string) ($row['session_id'] ?? '')] ?? '';
-    if ($d >= $weekAgo && $d <= $today) {
-        $weekCame++;
-    }
-}
 
 jfsd_head('Dashboard', 'dashboard');
 jfsd_page_title('Today', 'Dashboard');
@@ -91,35 +69,24 @@ jfsd_page_title('Today', 'Dashboard');
 
 <?php else: ?>
 
-<div class="adm-cards">
-  <a class="adm-card<?= $attention ? ' is-alert' : '' ?>" href="/admin/payments.php">
-    <span class="adm-card-label">Needs attention</span>
-    <span class="adm-card-val"><?= count($attention) ?></span>
-    <span class="adm-card-sub">
-      <?= $attention
-          ? 'Active student' . (count($attention) === 1 ? '' : 's') . ' with no sessions left.'
-          : 'Everyone active has sessions left.' ?>
-    </span>
-  </a>
-
-  <a class="adm-card" href="/admin/students.php">
-    <span class="adm-card-label">Active students</span>
-    <span class="adm-card-val"><?= count($roster) ?></span>
-    <span class="adm-card-sub"><?= count($students) ?> on the roster in total, including paused and past.</span>
-  </a>
-
-  <a class="adm-card" href="/admin/attendance.php">
-    <span class="adm-card-label">Came to class this week</span>
-    <span class="adm-card-val"><?= (int) $weekCame ?></span>
-    <span class="adm-card-sub">People on a class list since <?= jfsd_e(jfsd_date_friendly($weekAgo)) ?>.</span>
-  </a>
-
-  <a class="adm-card" href="/admin/payments.php">
-    <span class="adm-card-label">Taken this month</span>
-    <span class="adm-card-val"><?= jfsd_e(jfsd_money($monthTotal)) ?></span>
-    <span class="adm-card-sub"><?= (int) $monthCount ?> payment<?= $monthCount === 1 ? '' : 's' ?> recorded in <?= jfsd_e(date('F', (int) strtotime($today))) ?>.</span>
-  </a>
-</div>
+<?php /* THE FOUR HEADLINE CARDS ARE GONE, ON PURPOSE.
+ *
+ * Chia: "the top part, you don't have to show needs, attentions, active
+ * students, or profits this week."
+ *
+ * They were the first thing on the page and the least useful thing on it. Each
+ * one was a number standing alone above a panel that said the same thing with
+ * the names attached: "Needs attention 3" sat directly above a Needs attention
+ * list naming those three; "Came to class this week" sat above Today, which is
+ * the version he can act on. A count you cannot act on is not a summary of the
+ * panel below, it is a delay before reaching it — and on a phone it was a full
+ * screen of them before anything he came for.
+ *
+ * "Active students" and "Taken this month" are not gone from the admin, only
+ * from the top of this page: they live on Students and Payments, which is where
+ * he is when the question is actually his question.
+ *
+ * What replaces them is nothing. The page now opens on today's classes. */ ?>
 
 <!-- ============ TODAY'S CLASSES ============ -->
 <?php /* One link out of this panel, not one per class. Attendance is a single
@@ -179,99 +146,19 @@ foreach ($classesToday as $c) {
   </div>
 </div>
 
-<!-- ============ BALANCES THAT DO NOT ADD UP ============ -->
-<?php if ($drift): ?>
-  <div class="adm-panel">
-    <div class="adm-panel-h">
-      <h2 class="adm-panel-title">Balances that do not add up</h2>
-      <p class="adm-panel-note">
-        The sessions on the roster disagree with the payments and the class lists behind
-        them for these people. Nothing is lost: the payments and the class lists are what
-        actually happened, and the button puts the roster back in line with them.
-      </p>
-    </div>
-    <div class="adm-panel-b is-flush">
-      <p class="adm-swipe">Swipe the table sideways for the Fix button.</p>
-      <div class="adm-scroll">
-        <table class="adm-table">
-          <thead>
-            <tr><th>Name</th><th class="is-num">Roster says</th><th class="is-num">Should be</th><th></th></tr>
-          </thead>
-          <tbody>
-            <?php foreach ($drift as $row):
-                $s   = $row['student'];
-                $sid = (string) ($s['id'] ?? '');
-                ?>
-              <tr>
-                <td class="is-name"><a href="/admin/students.php?edit=<?= rawurlencode($sid) ?>"><?= jfsd_e((string) ($s['name'] ?? '')) ?></a></td>
-                <td class="is-num"><?= (int) $row['stored'] ?></td>
-                <td class="is-num"><span class="adm-pill adm-pill-alert"><?= (int) $row['expected'] ?></span></td>
-                <td class="is-num">
-                  <form class="adm-inline-form" method="post" action="/admin/"
-                        onsubmit="return confirm(<?= jfsd_e((string) json_encode(
-                            'Set ' . (string) ($s['name'] ?? 'this student') . ' to ' . (int) $row['expected']
-                            . ' session(s), which is what the payments and attendance add up to?',
-                            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-                        )) ?>);">
-                    <?= admin_csrf_field() ?>
-                    <input type="hidden" name="action" value="repair_balance">
-                    <input type="hidden" name="id" value="<?= jfsd_e($sid) ?>">
-                    <button class="adm-btn adm-btn-quiet" type="submit">Set to <?= (int) $row['expected'] ?></button>
-                  </form>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-<?php endif; ?>
-
-<!-- ============ NEEDS ATTENTION ============ -->
-<div class="adm-panel">
-  <div class="adm-panel-h">
-    <h2 class="adm-panel-title">Needs attention</h2>
-    <p class="adm-panel-note">Active students at zero or below. <a href="/admin/payments.php">Record a payment</a></p>
-  </div>
-  <div class="adm-panel-b is-flush">
-    <?php if (!$attention): ?>
-      <div class="adm-empty">
-        <strong>Nothing to chase.</strong>
-        Every active student has sessions left.
-      </div>
-    <?php else: ?>
-      <p class="adm-swipe">Swipe the table sideways for contact details and “Record payment”.</p>
-      <div class="adm-scroll">
-        <table class="adm-table">
-          <thead>
-            <tr><th>Name</th><th class="is-num">Sessions left</th><th>Plan</th><th>Contact</th><th></th></tr>
-          </thead>
-          <tbody>
-            <?php foreach (array_slice($attention, 0, 8) as $s):
-                $sid = (string) ($s['id'] ?? '');
-                ?>
-              <tr>
-                <td class="is-name"><a href="/admin/students.php?edit=<?= rawurlencode($sid) ?>"><?= jfsd_e((string) ($s['name'] ?? '')) ?></a></td>
-                <td class="is-num"><span class="adm-pill adm-pill-alert"><?= (int) ($s['sessions_remaining'] ?? 0) ?></span></td>
-                <td><?= jfsd_e(JFSD_PLANS[$s['plan'] ?? '']['label'] ?? '—') ?></td>
-                <td><?= jfsd_e((string) ($s['phone'] ?? ($s['email'] ?? ''))) ?></td>
-                <td class="is-num"><a href="/admin/payments.php?student=<?= rawurlencode($sid) ?>">Record payment</a></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-      <?php if (count($attention) > 8): ?>
-        <?php /* NOT .adm-demo-note — that amber marker means "these numbers are
-                 invented" and belongs only inside .adm-demo. This is a real list. */ ?>
-        <p class="adm-panel-more"><a href="/admin/payments.php">See all <?= count($attention) ?></a></p>
-      <?php endif; ?>
-    <?php endif; ?>
-  </div>
-</div>
-
-<?php endif; /* $students */ ?>
+<?php /* ORDER OF THIS PAGE.
+ *
+ * Chia: "Website traffic is the most important thing in the dashboard."
+ *
+ * So it sits directly under today's classes, above the money. That is a
+ * deliberate inversion of what a studio admin usually does, and it is right
+ * for this one: the balances and needs-attention lists are a WORKING QUEUE
+ * that Payments already owns and links straight into, whereas traffic and
+ * search are the only things on the whole admin that answer "is any of this
+ * reaching anyone" — and nowhere else answers it.
+ *
+ * Today stays first regardless. Whatever else the page is for, the first
+ * question on a class day is which classes are today. */ ?>
 
 <?php
 /* ===========================================================================
@@ -549,3 +436,98 @@ $gscRange = jfsd_gsc_range_label();
 </div>
 
 <?php jfsd_foot(); ?>
+
+
+<!-- ============ BALANCES THAT DO NOT ADD UP ============ -->
+<?php if ($drift): ?>
+  <div class="adm-panel">
+    <div class="adm-panel-h">
+      <h2 class="adm-panel-title">Balances that do not add up</h2>
+      <p class="adm-panel-note">
+        The sessions on the roster disagree with the payments and the class lists behind
+        them for these people. Nothing is lost: the payments and the class lists are what
+        actually happened, and the button puts the roster back in line with them.
+      </p>
+    </div>
+    <div class="adm-panel-b is-flush">
+      <p class="adm-swipe">Swipe the table sideways for the Fix button.</p>
+      <div class="adm-scroll">
+        <table class="adm-table">
+          <thead>
+            <tr><th>Name</th><th class="is-num">Roster says</th><th class="is-num">Should be</th><th></th></tr>
+          </thead>
+          <tbody>
+            <?php foreach ($drift as $row):
+                $s   = $row['student'];
+                $sid = (string) ($s['id'] ?? '');
+                ?>
+              <tr>
+                <td class="is-name"><a href="/admin/students.php?edit=<?= rawurlencode($sid) ?>"><?= jfsd_e((string) ($s['name'] ?? '')) ?></a></td>
+                <td class="is-num"><?= (int) $row['stored'] ?></td>
+                <td class="is-num"><span class="adm-pill adm-pill-alert"><?= (int) $row['expected'] ?></span></td>
+                <td class="is-num">
+                  <form class="adm-inline-form" method="post" action="/admin/"
+                        onsubmit="return confirm(<?= jfsd_e((string) json_encode(
+                            'Set ' . (string) ($s['name'] ?? 'this student') . ' to ' . (int) $row['expected']
+                            . ' session(s), which is what the payments and attendance add up to?',
+                            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+                        )) ?>);">
+                    <?= admin_csrf_field() ?>
+                    <input type="hidden" name="action" value="repair_balance">
+                    <input type="hidden" name="id" value="<?= jfsd_e($sid) ?>">
+                    <button class="adm-btn adm-btn-quiet" type="submit">Set to <?= (int) $row['expected'] ?></button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
+
+<!-- ============ NEEDS ATTENTION ============ -->
+<div class="adm-panel">
+  <div class="adm-panel-h">
+    <h2 class="adm-panel-title">Needs attention</h2>
+    <p class="adm-panel-note">Active students at zero or below. <a href="/admin/payments.php">Record a payment</a></p>
+  </div>
+  <div class="adm-panel-b is-flush">
+    <?php if (!$attention): ?>
+      <div class="adm-empty">
+        <strong>Nothing to chase.</strong>
+        Every active student has sessions left.
+      </div>
+    <?php else: ?>
+      <p class="adm-swipe">Swipe the table sideways for contact details and “Record payment”.</p>
+      <div class="adm-scroll">
+        <table class="adm-table">
+          <thead>
+            <tr><th>Name</th><th class="is-num">Sessions left</th><th>Plan</th><th>Contact</th><th></th></tr>
+          </thead>
+          <tbody>
+            <?php foreach (array_slice($attention, 0, 8) as $s):
+                $sid = (string) ($s['id'] ?? '');
+                ?>
+              <tr>
+                <td class="is-name"><a href="/admin/students.php?edit=<?= rawurlencode($sid) ?>"><?= jfsd_e((string) ($s['name'] ?? '')) ?></a></td>
+                <td class="is-num"><span class="adm-pill adm-pill-alert"><?= (int) ($s['sessions_remaining'] ?? 0) ?></span></td>
+                <td><?= jfsd_e(JFSD_PLANS[$s['plan'] ?? '']['label'] ?? '—') ?></td>
+                <td><?= jfsd_e((string) ($s['phone'] ?? ($s['email'] ?? ''))) ?></td>
+                <td class="is-num"><a href="/admin/payments.php?student=<?= rawurlencode($sid) ?>">Record payment</a></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+      <?php if (count($attention) > 8): ?>
+        <?php /* NOT .adm-demo-note — that amber marker means "these numbers are
+                 invented" and belongs only inside .adm-demo. This is a real list. */ ?>
+        <p class="adm-panel-more"><a href="/admin/payments.php">See all <?= count($attention) ?></a></p>
+      <?php endif; ?>
+    <?php endif; ?>
+  </div>
+</div>
+
+<?php endif; /* $students */ ?>
