@@ -138,19 +138,30 @@ Set the `JFSD_PRIVATE_DIR` environment variable, or edit the fallback path in
 | Class lists (who came) | **Real** |
 | Payment recording and session balances | **Real** |
 | Dashboard counts (attention, active, attended, money in) | **Real** — computed from your data |
-| Website traffic pane | **STUB. Invented numbers.** |
-| Top pages pane | **STUB. Invented numbers.** |
-| Search queries pane | **STUB. Invented numbers.** |
+| Website traffic pane | **Real** — Google Analytics, property 547369215, live since 2026-07-27 |
+| Top pages pane | **Real** — same snapshot |
+| Search queries pane | **Real wiring, not yet connected.** See section 9. |
 
-The three analytics panes are drawn with dashed amber borders, diagonal stripes, an
-amber **"DEMO DATA — NOT CONNECTED"** pill, and a sentence under each saying the
-numbers are not real. **GA4 and Google Search Console are not provisioned for
-jfselfdefense.com.** There is no API call behind those panes and no key to add.
+**Nothing on the dashboard is invented any more.** The last five made-up search
+queries went when the Search queries pane got its own data path. Every pane reads a
+snapshot file written by a script in `site/scripts/`, and shows *nothing* rather than
+something untrue when it has nothing:
 
-Do not tone the badges down until the data is genuinely live. When it is: replace
-`$demoTraffic` / `$demoPages` / `$demoQueries` in `index.php` with the API response,
-remove the `adm-demo` class and the `adm-demo-note` paragraphs, and delete the
-`JFSD_ANALYTICS_ARE_FAKE` marker. The table and card markup does not need to change.
+| File | Written by | Read by |
+|---|---|---|
+| `data/ga-snapshot.json` | `scripts/fetch-ga-snapshot.mjs` | traffic + top pages |
+| `data/gsc-snapshot.json` | `scripts/fetch-gsc-snapshot.mjs` | search queries |
+
+Both are aggregate figures only, both are denied over HTTP by `.htaccess`, and both
+are treated as **absent** once they go stale — 3 days for Analytics (re-fetched every
+deploy), 8 days for Search Console (a weekly pull by design). A stale number looks
+exactly like a fresh one on screen, so neither is shown.
+
+**Do not tone a badge down to make the page look finished.** The amber
+**"NOT CONNECTED"** treatment on the Search queries pane comes off by itself the
+moment a real snapshot lands on disk — the state is derived from the file, not typed
+into the page — and it must not come off any other way. A pane that claims a live
+connection it does not have is worse than one that admits it has none.
 
 ---
 
@@ -205,7 +216,8 @@ one-shot token, and so does "Add this class".
 
 | File | What it is |
 |---|---|
-| `index.php` | Dashboard. Today's classes, needs-attention list, stub analytics panes. |
+| `index.php` | Dashboard. Today's classes, needs-attention list, analytics + search panes. |
+| `data/*.json` | Analytics and Search Console snapshots. Written by `site/scripts/`, never by the admin. Denied over HTTP. |
 | `students.php` | Roster: list, search, add, edit, soft-delete. |
 | `attendance.php` | The whole attendance feature: month calendar on top, the chosen day underneath. **One page, no second screen.** |
 | `payments.php` | Needs-attention list, record a payment, payment history. |
@@ -453,3 +465,123 @@ dropped, with no error and a green build. Nested under `admin/` it ships, becaus
 `admin` matches the glob and `scp -r` then recurses the whole directory.
 
 Do not add anything writable under `public/admin/`. See section 2.
+
+---
+
+## 9. Search queries — switching Google Search Console on
+
+**Chia, this section is for you.** The dashboard side is finished and waiting. What
+is left is two things only a human with a browser can do, and neither takes long.
+
+### What is already true (nothing to do)
+
+- **The website appears to be verified in Search Console under your own Google
+  login.** The proof file `googleaacfe4f54c70a8fd.html` is live in the docroot and
+  returns 200, and `brands.json` records the property as created and verified on
+  2026-07-27. Confirm it in one glance in the Search Console UI before you start —
+  that is the only part of this nobody could check without your login. **Never delete
+  that file**: verification dies with it, and it survives CI deploys only because the
+  deploy adds and overwrites but never deletes.
+- **The dashboard reads a snapshot file, and the fetcher that writes it exists**:
+  `site/scripts/fetch-gsc-snapshot.mjs`. It is the twin of the Analytics one.
+- **The pane already tells the truth in all four states**, so nothing here is urgent
+  and nothing is lying while you wait.
+
+### What is actually missing
+
+Not verification — **a robot**. Search Console has no way to hand data to a script
+using your personal login unattended, so the pull needs its own identity: the
+portfolio-wide `seo-reader` service account, which **has not been created yet**
+(`claude-shared/seo/brands.json` still marks it `PLANNED`). Everything below exists to
+create that robot once, for all five brands, not just this one.
+
+Full reasoning and the general procedure: **`claude-shared/seo/GSC-setup-guide.md`**,
+Part C. Read Part C7 before you start — it explains why the obvious route does not
+work. Below is only JF's path through it.
+
+### Browser step 1 — Google Cloud Console
+
+In project **`dhp-site-analytics`** (guide C1–C4):
+
+1. **APIs & Services → Library** → enable **Google Search Console API** *and*
+   **Site Verification API**. Both. The second one is what makes step 2 possible.
+2. **IAM & Admin → Service Accounts → Create** → name it `seo-reader`. Skip the
+   optional IAM roles — Search Console access does not come from project IAM.
+3. **Keys → Add key → JSON.** It downloads once. Put it somewhere outside every repo,
+   record it in `secrets-and-tokens.md` under a new *Search Console (seo-reader)*
+   heading, and never commit it.
+
+> **Do not try to add the service-account address in Search Console's
+> "Users and permissions → Add user" box.** It will reject it as "not a Google
+> Account". That is a confirmed Google bug, open since April 2026, and no amount of
+> retrying fixes it. Step 2 is the way around it.
+
+### Browser step 2 — Hostinger hPanel, one DNS record
+
+With the key in hand, run this from anywhere:
+
+```bash
+export GSC_SA_KEY_FILE=/path/to/seo-reader-key.json
+node "claude-shared/seo/gsc-verify-register.mjs" token jfselfdefense.com
+```
+
+It prints one `google-site-verification=…` string. In hPanel → **Domains →
+jfselfdefense.com → DNS records**, add it as a **TXT** record on the host `@`.
+
+**Add it alongside the existing TXT records — do not replace anything.** The domain
+already carries one `google-site-verification` value (yours) and an SPF record; all of
+them must stay. Two Google verification records on one domain is normal and expected.
+
+### Then, in a terminal — no more browser needed
+
+```bash
+node "claude-shared/seo/gsc-verify-register.mjs" verify   jfselfdefense.com   # 503 = DNS not propagated, wait and retry
+node "claude-shared/seo/gsc-verify-register.mjs" register jfselfdefense.com
+node "claude-shared/seo/gsc-verify-register.mjs" list                          # want: sc-domain:jfselfdefense.com → siteOwner
+```
+
+Then, from `site/`:
+
+```bash
+export GSC_SA_KEY_FILE=/path/to/seo-reader-key.json
+node scripts/fetch-gsc-snapshot.mjs
+```
+
+That writes `public/admin/data/gsc-snapshot.json`, and the pane goes live on the next
+deploy. Re-run it weekly. **If anything is wrong the script writes nothing and says
+what to fix** — it never leaves a half-connected pane behind.
+
+### What the pane will say, in the order you will see it
+
+| When | What Jeffrey reads |
+|---|---|
+| Now, and until the steps above are done | *"Not connected to Google Search yet."* — amber, badged, no numbers |
+| The first few days after connecting | *"Connected. Google has nothing to report yet."* — plain, not amber, **not an error** |
+| Once Google has something | The real table |
+| If the weekly run stops for over 8 days | *"These figures have stopped updating."* — numbers withheld, not shown stale |
+
+**The second row is the one to expect, and the one not to panic about.** A Search
+Console property has no back history: it starts counting the day it is verified and
+publishes figures about three days late. A brand-new property is legitimately blank
+for a few days, and the pane says so in those words on purpose.
+
+### One decision worth knowing about
+
+The fetcher defaults to the **Domain** property `sc-domain:jfselfdefense.com` — the
+one the DNS TXT record above creates. That is the guide's recommendation because it
+covers `www`, non-`www`, `http` and `https` in one property, which the existing
+URL-prefix property does not.
+
+The trade is that it starts from zero. The existing URL-prefix property
+`https://jfselfdefense.com/` has been collecting since 2026-07-27, and you can point
+at that instead:
+
+```bash
+GSC_SITE_URL='https://jfselfdefense.com/' node scripts/fetch-gsc-snapshot.mjs
+```
+
+But the robot has to be verified against *that* property separately, and a URL-prefix
+property cannot be verified by DNS — it needs a `<meta>` tag in the site's `<head>`
+(`gsc-verify-register.mjs token --site https://jfselfdefense.com/`), which means a code
+change and a deploy rather than one paste into hPanel. Worth it only if the few weeks
+of history matter more than the extra step.

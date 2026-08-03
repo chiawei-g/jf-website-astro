@@ -275,24 +275,54 @@ foreach ($classesToday as $c) {
 
 <?php
 /* ===========================================================================
- * ANALYTICS AND SEARCH — PLACEHOLDERS ONLY
+ * ANALYTICS AND SEARCH
  * ---------------------------------------------------------------------------
- * GA4 and Google Search Console are NOT provisioned for jfselfdefense.com yet.
- * Every number below is invented. The shells exist so real data can be dropped
- * in later without redesigning the page: replace the arrays with the API
- * response, delete JFSD_ANALYTICS_ARE_FAKE, and the badges disappear.
+ * NO NUMBER BELOW IS INVENTED ANY MORE. Every panel in this block reads a
+ * snapshot file written by a script in site/scripts/, and shows nothing at all
+ * when it has nothing true to show. The last of the placeholder arrays (the
+ * five made-up search queries) went when Search Console got its own snapshot.
  *
- * DO NOT soften the badges until the data is genuinely live.
+ * THE RULE THAT SURVIVES ALL OF THAT: do not soften a badge to make the page
+ * look finished. The amber "Not connected" treatment on the Search queries panel
+ * comes off when a real snapshot appears on disk and not one moment earlier —
+ * and it comes off by itself, because the state is derived, not typed. A panel
+ * that claims a live connection it does not have is worse than a panel that
+ * admits it has none.
+ *
+ * Nothing in this block is allowed to fabricate a fallback. If a snapshot is
+ * missing, stale or empty, say so in words a non-technical reader understands.
  * ========================================================================= */
 /* GA4 went live on this site 2026-07-27 (property 547369215, G-L650FNHQTS), so
- * traffic and pages now read from a real snapshot. Search Console is NOT
- * verified for jfselfdefense.com yet, so the queries panel is still invented
- * and still badged. One flag per panel, because "analytics" stopped being a
- * single thing the moment one half became real. */
+ * traffic and pages read from a real snapshot. Search queries now read from
+ * their own snapshot too — see below; nothing on this page is invented any
+ * more. One flag per panel, because "analytics" stopped being a single thing
+ * the moment one half became real. */
 $gaSnapshot = jfsd_ga_snapshot();
 $trafficIsFake = ($gaSnapshot === null);
 $pagesAreFake  = ($gaSnapshot === null);
-const JFSD_QUERIES_ARE_FAKE = true;   // until GSC is verified
+
+/* The Search queries panel no longer has a fake flag, because it no longer has
+ * anything fake to flag. It has four states instead, and they are not two pairs:
+ *
+ *   absent — Search Console is not connected. Loud amber, same as the invented
+ *            rows used to be, because "we have no idea" must never be mistaken
+ *            for "nobody is searching for you".
+ *   empty  — connected, working, and Google has nothing yet. THIS IS NOT AN
+ *            ERROR and must not be dressed as one. A Search Console property has
+ *            no backfill: it starts counting the day it is verified and publishes
+ *            two to three days late, so a new connection is legitimately blank
+ *            for a few days. Reading "no data available" there would send
+ *            Jeffrey chasing a fault that does not exist.
+ *   live   — real rows.
+ *   stale  — connected once, stopped refreshing. Numbers withheld rather than
+ *            shown, for the reason in JFSD_GSC_STALE_DAYS.
+ *
+ * The distinction survives only because scripts/fetch-gsc-snapshot.mjs refuses
+ * to write the file unless Google actually answered. Presence of the file IS the
+ * claim that we are connected. Do not add a fallback that writes an empty one.
+ */
+$gscState = jfsd_gsc_state();
+$gscSnapshot = jfsd_gsc_snapshot();
 
 if ($gaSnapshot !== null) {
     $w = $gaSnapshot['windows']['d30']['metrics'] ?? [];
@@ -327,14 +357,13 @@ if ($gaSnapshot !== null) {
     ];
     $demoPages = [['Analytics snapshot not available', '—', '—']];
 }
-$demoQueries = [
-    ['self defense singapore',            '2,400', '6.2'],
-    ['womens self defence class',         '880',   '4.1'],
-    ['krav maga singapore',               '1,300', '11.8'],
-    ['self defense class near me',        '590',   '8.4'],
-    ['family self defence singapore',     '210',   '3.0'],
-];
 $demoBadge = '<span class="adm-demo-pill">Demo data — not connected</span>';
+
+/* Separate pill wording for the Search queries panel. There is no demo data in
+ * it any more, so calling it "demo data" would itself be inaccurate — and an
+ * inaccurate warning erodes the ones that are right. Same amber, same loudness,
+ * narrower claim. */
+$notConnectedBadge = '<span class="adm-demo-pill">Not connected</span>';
 ?>
 
 <div class="adm-panel<?= $trafficIsFake ? ' adm-demo' : '' ?>">
@@ -410,32 +439,113 @@ $demoBadge = '<span class="adm-demo-pill">Demo data — not connected</span>';
   <?php endif; ?>
 </div>
 
-<div class="adm-panel adm-demo">
+<?php /* ============ SEARCH QUERIES ============
+   Four states, one panel. Only 'absent' wears the amber demo treatment, because
+   only 'absent' means "nothing here is real". The other three are a working
+   connection reporting honestly, including when what it honestly has is nothing.
+   $gscRange is read from the snapshot so the dates on screen can never drift
+   away from the dates that were actually asked for. */
+$gscRange = jfsd_gsc_range_label();
+?>
+<div class="adm-panel<?= $gscState === 'absent' ? ' adm-demo' : '' ?>">
   <div class="adm-panel-h">
     <h2 class="adm-panel-title">Search queries</h2>
-    <?= $demoBadge ?>
+    <?php if ($gscState === 'absent'): ?>
+      <?= $notConnectedBadge ?>
+    <?php elseif ($gscState === 'live'): ?>
+      <p class="adm-panel-note">What people typed into Google, and how often you came up.</p>
+    <?php endif; ?>
   </div>
+
   <div class="adm-panel-b is-flush">
-    <div class="adm-scroll">
-      <table class="adm-table">
-        <thead><tr><th>Query</th><th class="is-num">Impressions</th><th class="is-num">Avg. position</th></tr></thead>
-        <tbody>
-          <?php foreach ($demoQueries as $row): ?>
+    <?php if ($gscState === 'absent'): ?>
+
+      <div class="adm-empty">
+        <strong>Not connected to Google Search yet.</strong>
+        When it is switched on, this panel shows the words people typed into Google
+        before they landed on your site, and how far up the page you came. Switching it
+        on is a one-off job at Google's end — section 9 of the admin README says who
+        does what.
+      </div>
+
+    <?php elseif ($gscState === 'stale'): ?>
+
+      <?php /* Deliberately shows no numbers at all. A stale figure is
+               indistinguishable from a fresh one on screen, which is exactly how a
+               frozen snapshot sat unnoticed on two sibling sites for three weeks. */ ?>
+      <div class="adm-empty">
+        <strong>These figures have stopped updating.</strong>
+        The last successful check was <?= jfsd_e(jfsd_gsc_updated_label()) ?>, so nothing
+        is shown rather than something out of date. Your website is fine — it is the
+        weekly fetch from Google that has stopped running. Section 9 of the admin README
+        says how to start it again.
+      </div>
+
+    <?php elseif ($gscState === 'empty'): ?>
+
+      <?php /* THE ONE PEOPLE GET WRONG. This is a success, not a failure, and the
+               copy has to carry that or it will be read as a fault and chased.
+               Google gives a property no history: it counts from the day it was
+               verified and publishes about three days late, so a new connection is
+               blank for a few days no matter what anyone does. */ ?>
+      <div class="adm-empty">
+        <strong>Connected. Google has nothing to report yet.</strong>
+        This is working. Google only counts searches from the day the site was
+        connected — there is no back history to catch up on — and it publishes the
+        figures about three days later. So the first few days are quiet by design.
+        Nothing to do; look again later in the week.
+      </div>
+
+    <?php else: /* live */ ?>
+
+      <p class="adm-swipe">Swipe the table sideways for clicks and position.</p>
+      <div class="adm-scroll">
+        <table class="adm-table">
+          <thead>
             <tr>
-              <td class="is-name"><?= jfsd_e($row[0]) ?></td>
-              <td class="is-num"><?= jfsd_e($row[1]) ?></td>
-              <td class="is-num"><?= jfsd_e($row[2]) ?></td>
+              <th>Search term</th>
+              <th class="is-num">Times shown</th>
+              <th class="is-num">Clicks</th>
+              <th class="is-num">Avg. position</th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            <?php foreach (array_slice((array) ($gscSnapshot['topQueries'] ?? []), 0, 8) as $q):
+                $pos = $q['position'] ?? null;
+                ?>
+              <tr>
+                <td class="is-name"><?= jfsd_e((string) ($q['query'] ?? '')) ?></td>
+                <td class="is-num"><?= jfsd_e(number_format((int) ($q['impressions'] ?? 0))) ?></td>
+                <td class="is-num"><?= jfsd_e(number_format((int) ($q['clicks'] ?? 0))) ?></td>
+                <td class="is-num"><?= $pos === null ? '—' : jfsd_e(number_format((float) $pos, 1)) ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+
+    <?php endif; ?>
   </div>
-  <p class="adm-demo-note">
-    <strong>These are not your real search rankings.</strong>
-    Google Search Console has not been connected to this site, so no query data exists.
-    Nobody has searched these terms and found you — the rows are illustrative only.
-  </p>
+
+  <?php if ($gscState === 'absent'): ?>
+    <p class="adm-demo-note">
+      <strong>There are no search figures here, real or invented.</strong>
+      Google Search Console has not been connected to this site, so no query data
+      exists for it. Anything shown in this panel would have had to be made up, so
+      nothing is.
+    </p>
+  <?php elseif ($gscState === 'live'): ?>
+    <p class="adm-panel-foot">
+      From Google Search<?= $gscRange !== '' ? ', ' . jfsd_e($gscRange) : '' ?>.
+      “Times shown” is how often you came up in the results; position 1 is the top of
+      the first page. Last checked <?= jfsd_e(jfsd_gsc_updated_label()) ?>.
+    </p>
+  <?php elseif ($gscState === 'empty'): ?>
+    <p class="adm-panel-foot">
+      Connected to Google Search<?= $gscRange !== '' ? ' and looking at ' . jfsd_e($gscRange) : '' ?>.
+      Last checked <?= jfsd_e(jfsd_gsc_updated_label()) ?>.
+    </p>
+  <?php endif; ?>
 </div>
 
 <?php jfsd_foot(); ?>

@@ -15,6 +15,22 @@ if (!defined('JFSD_ADMIN')) {
 // like a fresh one.
 const JFSD_GA_STALE_DAYS = 3;
 
+// The same guard for the Search Console snapshot, but a longer fuse, and the
+// difference is deliberate rather than an oversight.
+//
+// GA4 is re-fetched whenever the site is deployed, so three days without a
+// refresh really does mean something has broken. Search Console is a WEEKLY pull
+// by design — the whole portfolio's plan (claude-shared/seo/GSC-setup-guide.md,
+// Part E) is one /seo-pulse job a week, and Search Console itself only finalises
+// figures two to three days after the fact, so there is nothing a daily pull
+// would learn. Reusing the three-day figure here would mark a perfectly healthy
+// weekly snapshot as stale four days out of every seven, and a warning that is
+// wrong most of the time is a warning nobody reads.
+//
+// Eight days = one weekly cycle plus a day of slack. If the fetch is ever moved
+// onto every deploy, tighten this to match; it is one number.
+const JFSD_GSC_STALE_DAYS = 8;
+
 /* ===========================================================================
  * THE WEEKLY PATTERN — A SUGGESTION, NEVER AN IDENTITY
  * ---------------------------------------------------------------------------
@@ -1617,4 +1633,139 @@ function jfsd_ga_updated_label(): string
     if ($age < 1)  { return 'today'; }
     if ($age < 2)  { return 'yesterday'; }
     return (int) floor($age) . ' days ago';
+}
+
+/**
+ * Read the Search Console snapshot written by scripts/fetch-gsc-snapshot.mjs.
+ *
+ * Same home and same protection as the GA4 snapshot: admin/data/gsc-snapshot.json,
+ * inside the deploy tree so it ships with the build, denied over HTTP by the
+ * *.json rule in admin/.htaccess, read off disk by PHP.
+ *
+ * DELIBERATELY DIFFERENT FROM jfsd_ga_snapshot() IN ONE WAY: this does not
+ * return null when the snapshot is stale. The GA reader collapses "missing" and
+ * "stale" into one null because both mean "show nothing", and for traffic
+ * figures that is the whole answer. Search queries have a third possibility that
+ * matters more than either: the file can be present, fresh, and legitimately
+ * empty, because a Search Console property has NO BACKFILL — it counts searches
+ * only from the day it was verified, and finalises them two to three days late.
+ *
+ * So a brand-new connection is genuinely empty for a few days, and telling the
+ * studio owner "not connected" or "no data available" during that window would
+ * be a lie that sends him chasing a fault that does not exist. Distinguishing
+ * the four states is the point of this function; jfsd_gsc_state() names them.
+ *
+ * Returns null only when the snapshot is missing, unreadable or malformed.
+ * A returned array carries '_ageDays' and '_stale'.
+ *
+ * @return array<string,mixed>|null
+ */
+function jfsd_gsc_snapshot(): ?array
+{
+    static $cached = false;
+    static $value = null;
+    if ($cached) {
+        return $value;
+    }
+    $cached = true;
+
+    $path = __DIR__ . '/data/gsc-snapshot.json';
+    if (!is_file($path) || !is_readable($path)) {
+        return $value = null;
+    }
+    $raw = @file_get_contents($path);
+    if (!is_string($raw) || $raw === '') {
+        return $value = null;
+    }
+    $data = json_decode($raw, true);
+
+    /* 'topQueries' must be present AND an array. An empty array is a valid,
+     * meaningful answer here, so this checks the key exists rather than checking
+     * it is non-empty — is_array([]) is true and that is exactly the case this
+     * whole function exists to preserve. */
+    if (!is_array($data) || !isset($data['topQueries']) || !is_array($data['topQueries'])) {
+        return $value = null;
+    }
+
+    $generated = isset($data['generatedAt']) ? strtotime((string) $data['generatedAt']) : false;
+    if ($generated === false) {
+        return $value = null;
+    }
+
+    $data['_ageDays'] = (time() - $generated) / 86400;
+    $data['_stale']   = $data['_ageDays'] > JFSD_GSC_STALE_DAYS;
+    return $value = $data;
+}
+
+/**
+ * Which of the four things the Search queries panel is currently looking at.
+ *
+ *   'absent' — no snapshot. Search Console is not connected to this site.
+ *              This is the state until somebody does the one-off Google-side
+ *              setup; see README section 9.
+ *   'stale'  — a snapshot exists but has stopped being refreshed. Its numbers
+ *              are NOT shown: a stale figure looks identical to a fresh one,
+ *              which is how a frozen snapshot sat unnoticed on two sibling
+ *              sites for three weeks.
+ *   'empty'  — connected, fetched successfully, and Google returned nothing.
+ *              NOT AN ERROR. Normal for the first days of a new property, and
+ *              normal forever for a site nobody has searched for yet.
+ *   'live'   — connected, fresh, with rows.
+ *
+ * The 'absent' vs 'empty' distinction is the whole reason the fetcher refuses to
+ * write a file on failure. File present == a real API call succeeded. If that
+ * ever stops being true, this function starts lying.
+ */
+function jfsd_gsc_state(): string
+{
+    $snap = jfsd_gsc_snapshot();
+    if ($snap === null) {
+        return 'absent';
+    }
+    if (!empty($snap['_stale'])) {
+        return 'stale';
+    }
+    return ($snap['topQueries'] ?? []) === [] ? 'empty' : 'live';
+}
+
+/** Human-readable age of the Search Console snapshot, for the panel footnote. */
+function jfsd_gsc_updated_label(): string
+{
+    $snap = jfsd_gsc_snapshot();
+    if ($snap === null) {
+        return 'never';
+    }
+    $age = (float) ($snap['_ageDays'] ?? 0);
+    if ($age < 1)  { return 'today'; }
+    if ($age < 2)  { return 'yesterday'; }
+    return (int) floor($age) . ' days ago';
+}
+
+/**
+ * The window the snapshot actually covers, as "26 Jun – 23 Jul".
+ *
+ * Read from the file rather than hard-coded in the panel, because the fetcher
+ * ends its window three days back to stay inside Search Console's finalisation
+ * lag. A panel headline saying "last 28 days" while the data quietly stops on
+ * Tuesday is the kind of small untruth that costs an afternoon later.
+ */
+function jfsd_gsc_range_label(): string
+{
+    $snap = jfsd_gsc_snapshot();
+    $from = (string) ($snap['range']['startDate'] ?? '');
+    $to   = (string) ($snap['range']['endDate'] ?? '');
+    if ($from === '' || $to === '') {
+        return '';
+    }
+    /* Timezone read the long way rather than through jfsd_tz(), which lives in
+     * _ui.php. Everything else in this file does the same: _store.php is
+     * included by pages that do not always pull in _ui.php, and a helper that
+     * only works on some of them is a fatal waiting for the one page nobody
+     * tested. See jfsd_now_iso() / jfsd_today() directly above. */
+    $tz = new DateTimeZone((string) (jfsd_config()['timezone'] ?? 'Asia/Singapore'));
+    $fmt = static function (string $ymd) use ($tz): string {
+        $d = DateTimeImmutable::createFromFormat('!Y-m-d', $ymd, $tz);
+        return $d === false ? $ymd : $d->format('j M');
+    };
+    return $fmt($from) . ' – ' . $fmt($to);
 }
