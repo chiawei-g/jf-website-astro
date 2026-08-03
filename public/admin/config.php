@@ -46,7 +46,16 @@ return [
     'session_dir'   => $privateDir . '/.sessions',
     'ratelimit_dir' => $privateDir . '/.rate-limit',
 
-    // Cache-buster for the public stylesheet. Matches V in
-    // src/layouts/BaseLayout.astro. Bump both together if styles.css changes.
-    'css_version'   => '27',
+    /* NO css_version HERE ANY MORE.
+     *
+     * It used to hold a cache-buster for /styles.css that had to be kept in
+     * step by hand with V in src/layouts/BaseLayout.astro. It was not, and could
+     * not reasonably be expected to be: nothing failed when they diverged, so
+     * nothing said so. The public site went to 29, the admin stayed on 27, and
+     * every browser holding a cached styles.css under ?v=27 rendered the admin
+     * as unstyled HTML while the public site looked perfectly fine.
+     *
+     * _ui.php now takes the key from filemtime() on the file itself, the way it
+     * always did for admin.css. Two numbers that must match is a bug waiting for
+     * a quiet week; one number derived from the thing it describes is not. */
 ];

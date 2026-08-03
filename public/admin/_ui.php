@@ -322,10 +322,28 @@ const JFSD_NAV = [
 
 function jfsd_head(string $title, string $activeKey): void
 {
-    $config  = jfsd_config();
-    $cssV    = (string) ($config['css_version'] ?? '1');
-    $adminV  = (string) (@filemtime(__DIR__ . '/admin.css') ?: '1');
-    $user    = admin_current_user() ?? '';
+    /* CACHE KEYS COME FROM THE FILES THEMSELVES, NOT FROM A NUMBER SOMEBODY
+     * REMEMBERS TO BUMP.
+     *
+     * This admin has no colours, fonts or spacing of its own — admin.css says
+     * so at the top, and every value it uses is a custom property defined in
+     * the public site's styles.css. That makes styles.css a hard dependency of
+     * this admin's appearance, not a nice-to-have.
+     *
+     * It used to be requested as /styles.css?v=<a constant in config.php>,
+     * hand-synced to the public layout's own constant. They drifted — the
+     * public site moved to 29 while the admin stayed on 27 across three
+     * separate changes to styles.css — so any browser that had cached the file
+     * under ?v=27 went on serving that old copy to the admin forever, while the
+     * public site looked fine. The admin rendered as unstyled HTML: no
+     * background, no layout, serif fallbacks, because the variables it reaches
+     * for were not in the copy the browser had.
+     *
+     * filemtime cannot drift. The file changes, the key changes, the browser
+     * refetches, and there is nothing left to remember. */
+    $cssV   = (string) (@filemtime(__DIR__ . '/../styles.css') ?: '1');
+    $adminV = (string) (@filemtime(__DIR__ . '/admin.css') ?: '1');
+    $user   = admin_current_user() ?? '';
     ?>
 <!DOCTYPE html>
 <html lang="en" data-bg="charcoal" data-headline="humanist">

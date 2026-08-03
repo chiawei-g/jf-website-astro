@@ -243,7 +243,13 @@ if (admin_current_user()) {
     jfsd_redirect_login(ADMIN_HOME_PATH);
 }
 
-$cssV   = (string) ($config['css_version'] ?? '27');
+/* Same rule as jfsd_head(): the cache key is the file's own mtime, never a
+   number kept in step by hand. This page builds its own <head> because it must
+   render before any session exists, so it needs its own copy of the two lines
+   — which is exactly why the hardcoded '27' fallback survived here after
+   config.php stopped carrying one. Two copies of a constant is how it drifted
+   the first time. Two copies of a derivation cannot. */
+$cssV   = (string) (@filemtime(__DIR__ . '/../styles.css') ?: '1');
 $adminV = (string) (@filemtime(__DIR__ . '/admin.css') ?: '1');
 ?>
 <!DOCTYPE html>
