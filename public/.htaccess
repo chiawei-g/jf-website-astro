@@ -1,0 +1,39 @@
+# JF Self Defense — one canonical host.
+#
+# WHY THIS FILE EXISTS
+# -------------------
+# Hostinger serves this docroot for BOTH www.jfselfdefense.com and
+# jfselfdefense.com. Until this file, both returned 200, so every page on the
+# site existed at two addresses and Google had two of everything to reconcile.
+#
+# The <link rel="canonical"> in BaseLayout already points at the non-www host,
+# which is why this was a warning rather than an emergency — Google would very
+# probably have consolidated on its own. Two things made it worth fixing anyway:
+#
+#   1. The only two external links pointing at this site, from AvenueOne's
+#      write-up, use http://www.jfselfdefense.com/ — so whatever authority they
+#      pass has been landing on the duplicate.
+#   2. The Search Console property is the URL-prefix https://jfselfdefense.com/,
+#      which does not cover www AT ALL. Anything arriving on the www host has
+#      been invisible in the only place we measure.
+#
+# Non-www is canonical because that is what the canonical tags, the sitemap, the
+# GSC property and the schema all already say. This file makes the server agree
+# with them rather than the other way round.
+#
+# NO LOOP: the condition matches only the www host, and the target is the
+# non-www host, which cannot match it again.
+#
+# Everything else about how this site is served is left alone on purpose —
+# LiteSpeed's defaults for compression, caching and TLS are fine, and a
+# speculative pile of headers here would be untested config on a live site.
+# /admin/ keeps its own .htaccess; this rule runs before it and is what makes
+# the admin reachable on one host too.
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # www -> bare domain, preserving path and query string, permanently.
+  RewriteCond %{HTTP_HOST} ^www\.jfselfdefense\.com$ [NC]
+  RewriteRule ^(.*)$ https://jfselfdefense.com/$1 [R=301,L]
+</IfModule>
