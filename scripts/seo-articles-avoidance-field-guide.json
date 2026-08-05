@@ -1,0 +1,771 @@
+{
+  "slug": "avoidance-field-guide",
+  "title": "A fight you avoid is a fight you won: the field guide to not being a target",
+  "categoryRef": "cat-avoidance",
+  "excerpt": "Thirty-three years in security, eleven with the Singapore Police Force, on the three-rung order self-defense happens in, and why none of it depends on Singapore being dangerous to begin with.",
+  "metaDescription": "How do you avoid dangerous situations? A 33-year security veteran's field guide to the order personal safety actually happens in, one rung at a time.",
+  "readTime": "10 min read",
+  "featured": true,
+  "publishedAt": "2026-08-05T09:00:00Z",
+  "targetQuery": "how to avoid dangerous situations",
+  "body": [
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k0",
+          "text": "On the first night of class, someone always asks when they get to hit something. Jeffrey Fleury has given the same answer for seventeen years running JF Self Defense: if the class does its job, the honest answer is never. Not because nothing bad ever happens in Singapore. Because most of what he teaches is built to end a situation before a hand goes up, and the students who train it well spend years never needing the part they signed up expecting."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1",
+          "text": "That is the whole shape of this article too. Four guides already live on this site, each answering a single piece of staying out of trouble: how a stranger actually picks a target, how to decide a night route before you are too tired to decide anything, how to stay alert without burning out by 9pm, and what to do with the feeling in your chest that arrives before the reason does. This piece is the map showing how those pieces fit together, in the order they actually get used, from an ordinary Tuesday when nothing happens to the rare day when something does."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkk3",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/trainers/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k2",
+          "text": "What follows draws on thirty-three years in security: eleven with the Singapore Police Force, twenty-two more running regional security for MNCs across Asia-Pacific, and the last seventeen teaching this material directly to Singapore residents. The full record is on the "
+        },
+        {
+          "_type": "span",
+          "_key": "k4",
+          "text": "trainers page",
+          "marks": [
+            "lnkk3"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "k5",
+          "text": ". What matters here is simpler: the sequence below is the order those years taught that trouble actually unfolds in, not the order most self-defense marketing teaches it."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "blockquote",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k6",
+          "text": "Almost everything that actually works in self-defense happens before anything looks like self-defense. Most of it is avoidance, ordinary enough that nobody watching would call it training. What does not get avoided gets talked down, with tone and distance instead of a raised hand. What survives both is the rare case that genuinely needs a physical answer, and even then the goal is an exit, not a win. Most schools teach that last part first. This guide starts where the real work actually starts."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k7",
+          "text": "How do you avoid dangerous situations?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k8",
+          "text": "Mostly, it comes down to a short list of decisions made well before you are in one, not a skill performed live under pressure. Whether you read as an easy target to somebody scanning a street is decided by ordinary habits like pace and attention, not by who you are. Whether your route and your personal rules are already fixed is decided long before you are tired enough to start negotiating with yourself at 1am. What is left after both of those is a smaller, rarer category: noticing the moment something specific actually shifts, early enough that you still have options."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k9",
+          "text": "Handle the first two consistently and the third rarely gets tested. That is the entire logic behind training avoidance instead of training to win fights: dangerous situations are already rare in Singapore, and almost all of the ones that do reach someone were reachable well before they became dangerous. Everything below maps that logic in order, what to actually do at each stage, and where the deeper version of each one already lives on this site."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "ka",
+          "text": "Avoid, de-escalate, act: the ladder underneath everything JF teaches"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "blockquote",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "kb",
+          "text": "I don't teach martial arts. I teach you how to avoid needing them, and what to do in the seconds when avoidance fails."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "kc",
+          "text": "That is Jeffrey's own description of the studio, and it maps directly onto three rungs, each doing a different job, each carrying a different cost when it gets skipped. Almost every hour of training goes into the first one. Almost every self-defense class most people picture starts at the last one."
+        }
+      ]
+    },
+    {
+      "_type": "comparisonTable",
+      "caption": "What each rung of the ladder actually does, and what it costs to arrive there unprepared",
+      "headers": [
+        "Rung",
+        "What actually happens here",
+        "What it costs if this is the rung you rely on"
+      ],
+      "rows": [
+        {
+          "_type": "row",
+          "_key": "kd",
+          "cells": [
+            "Avoid",
+            "Reading a route, a room, a person, before anything happens",
+            "You never reach the other two rungs at all"
+          ]
+        },
+        {
+          "_type": "row",
+          "_key": "ke",
+          "cells": [
+            "De-escalate",
+            "Tone, distance, one clear boundary, the moment things start to tilt",
+            "A confrontation gets no chance to cool before it turns physical"
+          ]
+        },
+        {
+          "_type": "row",
+          "_key": "kf",
+          "cells": [
+            "Act",
+            "A timed physical response, aimed only at creating an exit",
+            "The whole outcome rests on a few seconds of technique"
+          ]
+        }
+      ]
+    },
+    {
+      "_type": "image-placeholder"
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "kg",
+          "text": "Not getting picked in the first place"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkki",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/articles/how-attackers-choose-their-victims/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "kh",
+          "text": "Before anything else happens, somebody has to choose you, and that choice is not as personal as it feels from the outside. Jeffrey calls the whole sequence the Anatomy of a Predatory Encounter: Selection, Testing, Positioning, then Attack or Withdrawal. Selection is the only stage you can end alone, before the other person has done anything at all, and "
+        },
+        {
+          "_type": "span",
+          "_key": "kj",
+          "text": "how attackers actually choose their victims",
+          "marks": [
+            "lnkki"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "kk",
+          "text": " comes down to a short, learnable list of visible signals rather than anything about who you are."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkkm",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/articles/three-minutes-singapore-awareness/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "kl",
+          "text": "Three minutes a day is enough to change most of that read, run at the ordinary transitions in a day, stepping out of an office at night or waiting for a lift, rather than as a separate task. "
+        },
+        {
+          "_type": "span",
+          "_key": "kn",
+          "text": "The three-minute awareness habit every new student learns first",
+          "marks": [
+            "lnkkm"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "ko",
+          "text": " turns pace and attention into something closer to muscle memory than a checklist, and it is the daily version of everything Selection actually measures."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "kp",
+          "text": "The awareness that survives longer than one tense night"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkkr",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/articles/aware-without-being-paranoid/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "kq",
+          "text": "Reading a street correctly means nothing if the habit collapses by nine most evenings. Awareness and anxiety notice roughly the same amount. What differs is what happens after noticing, and knowing "
+        },
+        {
+          "_type": "span",
+          "_key": "ks",
+          "text": "how to be aware without being paranoid",
+          "marks": [
+            "lnkkr"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "kt",
+          "text": " comes down to which of three codes, White, Yellow, Red, your body is actually running at the time, not to trying harder."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkkv",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/articles/walking-alone-at-night-singapore/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "ku",
+          "text": "The same principle explains why "
+        },
+        {
+          "_type": "span",
+          "_key": "kw",
+          "text": "deciding a late-night route home while you're still rested",
+          "marks": [
+            "lnkkv"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "kx",
+          "text": " beats reasoning about it at 1am, when the version of you doing the deciding has the least judgement left to spend. Fix the route, fix one rule simple enough to survive being tired, and the tired version of you only has to follow a decision instead of making one from scratch."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkkz",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/articles/trust-your-gut-feeling-about-danger/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "ky",
+          "text": "One layer down from that is the feeling that arrives before you can explain it. The prickle at the back of the neck is a real read running faster than the reasoning that would justify it, and learning to "
+        },
+        {
+          "_type": "span",
+          "_key": "k10",
+          "text": "trust your gut feeling about danger",
+          "marks": [
+            "lnkkz"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "k11",
+          "text": ", without pausing to build a case for it first, is usually the difference between a wasted ten seconds and a much worse evening."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k12",
+          "text": "De-escalate: the rung almost no school trains on purpose"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k13",
+          "text": "Most self-defense curricula skip straight from awareness to technique, because tone and distance do not photograph well for a class demo. They are still where most of what avoidance misses actually gets resolved. A confrontation that has already started is not yet a fight, and the gap between the two is usually a matter of seconds, not skill."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k14",
+          "text": "What holds that gap open is unglamorous. A flat, unhurried voice reads completely differently to a raised one, and a step that opens distance reads differently to one that closes it. Boundaries work the same way: stated plainly, once, then treated as already heard rather than repeated three different ways, which reads as pleading instead of as somebody who was never going to be moved. That gap in delivery is most of what a verbal exchange like this actually rests on, and it is trainable in a room the same way a physical technique is."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k15",
+          "text": "Act: the seconds when the first two rungs have already failed"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkk17",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/articles/why-running-is-under-rated/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k16",
+          "text": "When avoidance and words both run out, the option most people trust least is usually the right one. Running, or leaving, as JF teaches it, moves toward something specific, a lit road or a door that can close, not away from a vague threat. It starts the moment a situation tilts wrong, rather than the moment contact is actually made. "
+        },
+        {
+          "_type": "span",
+          "_key": "k18",
+          "text": "Why running is under-rated as serious self-defense",
+          "marks": [
+            "lnkk17"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "k19",
+          "text": " comes down to timing: trained early enough, it ends an encounter before anyone watching would even call it one."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkk1b",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/articles/self-defence-law-singapore-how-much-force/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1a",
+          "text": "If it goes further than that, the physical response is bound by the same test Singapore law has always applied: no more force than is reasonably necessary against the danger actually faced, for as long as that danger reasonably lasts. "
+        },
+        {
+          "_type": "span",
+          "_key": "k1c",
+          "text": "How much force Singapore law actually allows",
+          "marks": [
+            "lnkk1b"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "k1d",
+          "text": " in that moment is answered in full elsewhere on this site, worth reading long before an adrenaline-soaked moment becomes the first time the question ever comes up."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1e",
+          "text": "Why train this in one of the safest cities in the world"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkk1g",
+          "_type": "link",
+          "href": "https://www.prnewswire.com/news-releases/global-safety-ratings-reach-record-high-302560080.html"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1f",
+          "text": "Singapore has topped "
+        },
+        {
+          "_type": "span",
+          "_key": "k1h",
+          "text": "Gallup's 2025 Global Safety Report",
+          "marks": [
+            "lnkk1g"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "k1i",
+          "text": " for the twelfth time, with 98% of residents saying they feel secure walking alone at night, men and women within a single point of each other. That is not marketing copy. It is the current data, and it means the honest case for this training was never fear. Training that only makes sense in a dangerous city has nothing to say to somebody living in one of the safest ones, and pretending otherwise is exactly the kind of self-defense marketing this studio was built to be the opposite of."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkk1k",
+          "_type": "link",
+          "href": "https://selfdefense.uoregon.edu/research-on-self-defense/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1j",
+          "text": "Rare is not the same as never, and the case for training anyway holds up under research, beyond intuition alone. Structured, avoidance-first training measurably changes outcomes: "
+        },
+        {
+          "_type": "span",
+          "_key": "k1l",
+          "text": "research summarised by the University of Oregon's self-defense program",
+          "marks": [
+            "lnkk1k"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "k1m",
+          "text": " found that women who complete this kind of training are both more likely to avoid an assault if targeted, and less likely to be targeted in the first place. The mechanism is not a mystery. It is the same one running through every rung of the ladder above: the read somebody else makes of you changes the moment your own habits change."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h2",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1n",
+          "text": "Common questions"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1o",
+          "text": "Do I need any of this if Singapore already feels this safe?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1p",
+          "text": "Rare is not the same as never, and the handful of times this matters in a life are exactly the times worth being ready for. The training also costs very little day to day, since most of it is habit rather than effort, which is why it holds up even in a city where the odds of ever needing it are genuinely low."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1q",
+          "text": "Where do I actually start, out of everything above?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1r",
+          "text": "With whichever rung you are currently skipping. Most people already practise some avoidance and have never trained de-escalation on purpose, so that is usually the highest-value gap. If none of the above feels familiar yet, start with the daily three-minute habit; everything else builds on it."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1s",
+          "text": "Isn't focusing on avoidance just a polite way of putting the responsibility on the person who gets targeted?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1t",
+          "text": "No, and this is worth being precise about. Responsibility for an attack sits entirely with the person who chooses to attack. What changes once you understand how targets actually get selected is not who is to blame if something happens. It is how much influence you have over whether it does, and that is a very different thing to hold onto than blame."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1u",
+          "text": "Is any of this only for women?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1v",
+          "text": "No. The read a stranger makes off your pace and attention does not check gender first, and neither does the training. Jeffrey teaches the same three rungs to men and women alike, and just as often to teenagers, calibrated to whatever a given student is actually worried about rather than to a single profile of who needs this."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1w",
+          "text": "What if I do the avoidance and de-escalation properly and it still doesn't work?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1x",
+          "text": "Then you are in the last, rarest category, and that is exactly what the third rung and Singapore's own force law both exist for. Training does not promise a guaranteed outcome in that moment, and no honest instructor tells you otherwise. What it promises is that the moment does not arrive as a complete surprise, which is most of what separates a bad ninety seconds from a genuinely dangerous one."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1y",
+          "text": "How long before any of this stops feeling like effort?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k1z",
+          "text": "About a fortnight of running it at the same daily transitions, based on what JF's own students report. After that, checking exits or reading a stranger's pace stops being a decision you remember to make and starts being the kind of glance you already give a flight of stairs before taking it. The effort is front-loaded. The habit is not."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "h3",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k20",
+          "text": "Does any of this change once I leave Singapore?"
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k21",
+          "text": "The three rungs stay identical; only the calibration shifts. A place you do not know as well earns a little more attention on the first rung, and a little more caution about how quickly you would recognise your own exits on the third. Jeffrey's corporate and travel-security work runs on the exact same ladder as everything above, adjusted for less familiar ground, not a different method."
+        }
+      ]
+    },
+    {
+      "_type": "block",
+      "style": "normal",
+      "markDefs": [
+        {
+          "_key": "lnkk23",
+          "_type": "link",
+          "href": "https://jfselfdefense.com/programmes/"
+        }
+      ],
+      "children": [
+        {
+          "_type": "span",
+          "_key": "k22",
+          "text": "None of the above replaces training, and it was never meant to. Reading a room and holding a boundary both become instinct instead of effort the same way anything does, through repetition, with someone correcting your form. That is what happens in the room at "
+        },
+        {
+          "_type": "span",
+          "_key": "k24",
+          "text": "JF's programmes",
+          "marks": [
+            "lnkk23"
+          ]
+        },
+        {
+          "_type": "span",
+          "_key": "k25",
+          "text": ", built around the same order this whole guide follows: avoid first, and everything after that only if avoid did not already finish the job."
+        }
+      ]
+    }
+  ],
+  "coverImagePath": "scripts/generated-images/avoidance-field-guide-cover.webp",
+  "coverAlt": "A calm covered walkway between Singapore public housing blocks, rows of round pillars lining a long sunlit corridor, with a single distant figure walking away near the far end.",
+  "inlineImagePath": "scripts/generated-images/avoidance-field-guide-inline.webp",
+  "inlineAlt": "A round orange convex safety mirror mounted at the corner of a concrete stairwell, reflecting the steps, handrail and overhead light of the blind corner beyond."
+}
