@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getAllArticles, getArticleBySlug } from '../../lib/sanity';
+import { buildFaqJsonLd } from '../../lib/faq-jsonld';
 import { toHTML } from '@portabletext/to-html';
 
 export async function getStaticPaths() {
@@ -25,6 +26,7 @@ const {
   categorySlug,
   categoryNav,
   publishedAt,
+  _updatedAt,
   readTime,
   coverImageUrl,
   body,
@@ -104,6 +106,11 @@ const bodyHtml = toHTML(body || [], {
   },
 });
 
+// FAQPage from the article's own "Common questions" section. Null when an
+// article has no question block, in which case the node is dropped rather than
+// emitted empty.
+const faqJsonLd = buildFaqJsonLd(body);
+
 const articleJsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -112,6 +119,9 @@ const articleJsonLd = {
       headline: title,
       description: excerpt,
       datePublished: isoDate,
+      // Sanity's _updatedAt. Falls back to the publish date so the property is
+      // never emitted empty or invalid.
+      dateModified: _updatedAt || isoDate,
       author: {
         '@type': 'Person',
         name: 'Jeffrey Fleury',
@@ -139,6 +149,7 @@ const articleJsonLd = {
         { '@type': 'ListItem', position: 3, name: title, item: new URL(`/articles/${slug}/`, Astro.site).toString() },
       ],
     },
+    ...(faqJsonLd ? [faqJsonLd] : []),
   ],
 };
 ---

@@ -49,6 +49,10 @@ export async function getArticleBySlug(slug: string) {
     "slug": slug.current,${CATEGORY_PROJECTION}
     excerpt,
     publishedAt,
+    // Feeds Article.dateModified and the sitemap <lastmod>. Google uses a
+    // freshness signal on informational content, and JF emitted neither until
+    // 2026-08-05.
+    _updatedAt,
     readTime,
     featured,
     "coverImageUrl": coverImage.asset->url + "?auto=format&q=80",
