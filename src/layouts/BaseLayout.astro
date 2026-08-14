@@ -99,6 +99,15 @@ const orgJsonLd = {
   gtag('config', 'G-L650FNHQTS');
 </script>
 
+{/* Conversion tracking — claude-shared/seo/conversion-tracking-standard.md.
+    JF's conversions are contact_click (WhatsApp is the primary channel) and
+    lead_submit (the trial form). WhatsApp/tel/mailto are auto-detected by the
+    tracker; the trial form calls window.convTrack.lead() from its own success
+    handler in site.js, so a failed POST is never counted as a conversion.
+    CONV_BRAND must match the key in seo/brands.json. */}
+<script is:inline>window.CONV_BRAND = 'jf';</script>
+<script src="/conversion-tracking.js" defer></script>
+
 {/* Microsoft Clarity — project xvcauil6bq, created 2026-08-01 under
     chiawei.g@dustinhill.com.sg (same account as DHP + Jacyoga). JF was the
     last brand with no behavioural analytics at all. Matches the install

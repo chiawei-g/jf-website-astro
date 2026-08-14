@@ -398,6 +398,15 @@
         }
         form.classList.add("is-sent");
         if (success) success.classList.add("is-shown");
+
+        // Conversion: fired ONLY here, after the POST is confirmed ok. Firing on
+        // click or on submit would count failed sends as conversions.
+        // Standard: claude-shared/seo/conversion-tracking-standard.md
+        if (window.convTrack) {
+          window.convTrack.lead("trial-class", null, {
+            form_variant: form.hasAttribute("data-inline") ? "inline" : "modal",
+          });
+        }
       } catch (err) {
         showError(
           "Sorry — we couldn't send that just now. Please WhatsApp Jeffrey at +65 9621 0576 or email Jeffrey.f@jfselfdefense.com directly."
