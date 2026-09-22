@@ -19,7 +19,7 @@ const DATASET = process.env.SANITY_DATASET || 'production';
 export async function loadArticleLastmodMap() {
   try {
     const query = encodeURIComponent(
-      '*[_type == "article" && defined(slug.current)]{"slug": slug.current, _updatedAt}',
+      '*[_type == "article" && defined(slug.current)]{"slug": slug.current, _updatedAt, publishedAt}',
     );
     const url = `https://${PROJECT_ID}.api.sanity.io/v2025-04-01/data/query/${DATASET}?query=${query}`;
     const headers = process.env.SANITY_TOKEN
@@ -33,7 +33,11 @@ export async function loadArticleLastmodMap() {
     const { result = [] } = await res.json();
     const map = {};
     for (const r of result) {
-      if (r?.slug && r?._updatedAt) map[`/articles/${r.slug}/`] = r._updatedAt;
+      if (r?.slug && r?._updatedAt) {
+        // Floor at publishedAt, matching Article.dateModified (see [...slug].astro).
+        const lm = r.publishedAt && new Date(r.publishedAt) > new Date(r._updatedAt) ? r.publishedAt : r._updatedAt;
+        map[`/articles/${r.slug}/`] = lm;
+      }
     }
     console.log(`[sitemap-lastmod] resolved ${Object.keys(map).length} article lastmod dates.`);
     return map;

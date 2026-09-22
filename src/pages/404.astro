@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+// Branded 404, served via `ErrorDocument 404 /404.html` in public/.htaccess (added 2026-09-22).
+---
+<BaseLayout
+  title="Page not found"
+  description="This page doesn't exist. Find JF Self Defense programmes, articles and how to reach us."
+  noindex={true}
+  bodyLabel="404">
+
+<section class="section">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <h1 class="display h2 section-head-title">This page doesn't exist.</h1>
+        <p class="lede" style="margin-top:24px;max-width:54ch;">
+          The link may be old, or the address may have a typo. Everything we teach is still here.
+        </p>
+      </div>
+    </div>
+    <div class="press-links" style="margin-top:32px;">
+      <a class="press-link" href="/programmes/">
+        See the programmes
+        <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </a>
+      <a class="press-link secondary" href="/articles/">Read the articles</a>
+      <a class="press-link secondary" href="https://wa.me/6596210576" target="_blank" rel="noopener">Message us on WhatsApp</a>
+    </div>
+  </div>
+</section>
+
+</BaseLayout>

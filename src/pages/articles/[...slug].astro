@@ -119,9 +119,10 @@ const articleJsonLd = {
       headline: title,
       description: excerpt,
       datePublished: isoDate,
-      // Sanity's _updatedAt. Falls back to the publish date so the property is
-      // never emitted empty or invalid.
-      dateModified: _updatedAt || isoDate,
+      // Sanity's _updatedAt, floored at the publish date: a doc created before its
+      // scheduled publishedAt otherwise reports dateModified < datePublished
+      // (11 of 19 articles on 2026-09-22). Never emitted empty or invalid.
+      dateModified: _updatedAt && new Date(_updatedAt) > date ? new Date(_updatedAt).toISOString() : isoDate,
       author: {
         '@type': 'Person',
         name: 'Jeffrey Fleury',

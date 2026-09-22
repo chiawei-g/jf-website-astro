@@ -28,7 +28,9 @@ const {
 } = Astro.props;
 
 const siteName = 'JF Self Defense';
-const fullTitle = title === siteName ? title : `${title} — ${siteName}`;
+// Don't append the brand to a title that already carries it (the homepage read
+// "JF Self Defense — Singapore — JF Self Defense" until 2026-09-22).
+const fullTitle = title.includes(siteName) ? title : `${title} — ${siteName}`;
 const canonical = new URL(canonicalPath, Astro.site).toString();
 const ogImageAbs = ogImage ? new URL(ogImage, Astro.site).toString() : new URL('/assets/logo.png', Astro.site).toString();
 

@@ -36,4 +36,13 @@
   # www -> bare domain, preserving path and query string, permanently.
   RewriteCond %{HTTP_HOST} ^www\.jfselfdefense\.com$ [NC]
   RewriteRule ^(.*)$ https://jfselfdefense.com/$1 [R=301,L]
+
+  # US spelling of the legal hub. It 404'd while still taking impressions at
+  # position 1 in Search Console (2026-09-04, 09-16). Added 2026-09-22.
+  RewriteRule ^articles/self-defense-law-singapore/?$ https://jfselfdefense.com/articles/self-defence-law-singapore/ [R=301,L]
 </IfModule>
+
+# Branded 404 (src/pages/404.astro) instead of Hostinger's generic page. Added 2026-09-22.
+# NOTE: CI deploys with `scp -r dist/*`, which skips root dotfiles, so this file
+# must be uploaded to the server by hand whenever it changes.
+ErrorDocument 404 /404.html
